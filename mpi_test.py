@@ -24,6 +24,7 @@ pattern_seed = rank
 aux = serial_wrapper(trials_per_rank, hypercolumns, minicolumns, number_of_sequences, sequence_length, pattern_seed)
 successes, points_of_failure, persistence_times = aux
 
+print('trials per rank', trials_per_rank)
 print(np.mean(successes))
 collection = comm.gather(successes, root=0)
 if rank == 0:
