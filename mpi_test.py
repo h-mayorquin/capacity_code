@@ -12,8 +12,6 @@ comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 size = comm.Get_size()
 
-print('Hello from process {} out of {}'.format(rank, size))
-
 # Run a dummy example
 hypercolumns = 5
 minicolumns = 10
