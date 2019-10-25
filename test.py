@@ -30,8 +30,6 @@ points_of_failure = sum([x[1] for x in result], [])
 persistent_times = sum([x[2] for x in result], [])
 filtered_failures = [x for x in points_of_failure if x not in ['success', 'too short']]
 
-#pattern_seed = 1
-#aux = serial_wrapper(trials, hypercolumns, minicolumns, number_of_sequences, sequence_length, pattern_seed)
-#successes, points_of_failure, persistence_times = aux
+
 
 print(np.mean(succcess))
