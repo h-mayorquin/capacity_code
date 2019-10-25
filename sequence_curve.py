@@ -32,15 +32,16 @@ for ns in number_of_sequences_vector:
 
     aux = serial_wrapper(trials_per_rank, hypercolumns, minicolumns, number_of_sequences, sequence_length, pattern_seed)
     successes, points_of_failure, persistence_times = aux
-
-    collection_of_succesess = sum(comm.gather(successes, root=0), [])
-    collection_of_points_of_failure = sum(com.gather(points_of_failure, root=0), [])
-    collection_of_persistent_times = sum(com.gather(persistence_times, root=0), [])
+    
+    aux_success = comm.gather(successes, root=0)
+    aux_failure = comm.gather(points_of_failure, root=0)
+    aux_times = comm.gather(persistence_times, root=0)
 
     if rank == 0:
-        storage_dic_success[ns] = collection_of_succesess
-        storage_dic_points_of_failure[ns] = collection_of_points_of_failure
-        storage_dic_persistent_times = collection_of_persistent_times
+        collection_of_persistent_times = 
+        storage_dic_success[ns] = sum(aux_success, [])
+        storage_dic_points_of_failure[ns] = sum(aux_failure, [])
+        storage_dic_persistent_times = sum(aux_times, [])
         
         
 # Store data as a pickle
@@ -50,5 +51,5 @@ if rank == 0:
                 'sequence_length': sequence_length}
     
     filename = './data.pickle'
-    with open('filename.pickle', 'wb') as handle:
-    pickle.dump(save_dic, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    with open(filename, 'wb') as handle:
+        pickle.dump(save_dic, handle, protocol=pickle.HIGHEST_PROTOCOL)
