@@ -26,8 +26,11 @@ successes, points_of_failure, persistence_times = aux
 
 print('trials per rank', trials_per_rank)
 print(np.mean(successes))
-collection = comm.gather(successes, root=0)
+collection_of_succesess = sum(comm.gather(successes, root=0), [])
+collection_of_points_of_failure = sum(com.gather(points_of_failure, root=0), [])
+collection_of_points_of_persistent_times = sum(com.gather(points_of_failure, root=0), [])
+
 if rank == 0:
-    print('rank', rank, np.mean(sum(collection, [])))
+    print('rank', rank, np.mean(collection_of_succesess))
 
 
