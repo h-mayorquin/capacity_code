@@ -38,7 +38,6 @@ for ns in number_of_sequences_vector:
     aux_times = comm.gather(persistence_times, root=0)
 
     if rank == 0:
-        collection_of_persistent_times = 
         storage_dic_success[ns] = sum(aux_success, [])
         storage_dic_points_of_failure[ns] = sum(aux_failure, [])
         storage_dic_persistent_times = sum(aux_times, [])
