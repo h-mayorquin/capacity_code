@@ -19,17 +19,16 @@ hypercolumns = 5
 minicolumns = 10
 sequence_length = 2
 number_of_sequences = 3
-trials = 5
+total_trials = 500
+trials_per_rank = ceil(total_trials / size)
 
-succesess = [i for i in range(trials)]
+pattern_seed = rank
+aux = serial_wrapper(trials_per_rank, hypercolumns, minicolumns, number_of_sequences, sequence_length, pattern_seed)
+successes, points_of_failure, persistence_times = aux
 
-#pattern_seed = rank
-#aux = serial_wrapper(trials, hypercolumns, minicolumns, number_of_sequences, sequence_length, pattern_seed)
-#successes, points_of_failure, persistence_times = aux
-
-#print(np.mean(successes))
+print(np.mean(successes))
+collection = comm.gather(successes, root=0)
 if rank == 0:
-    collection = comm.gather(succesess, root=0)
-    print(len(collection))
+    print('rank', rank, np.mean(sum(collection, [])))
 
 
