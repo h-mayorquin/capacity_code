@@ -1,5 +1,7 @@
 from mpi4py import MPI
 import warnings
+import picke 
+
 warnings.filterwarnings('ignore')
 
 import numpy as np
@@ -30,7 +32,7 @@ if rank == 0:
 pattern_seed = rank
 for ns in number_of_sequences_vector:
 
-    aux = serial_wrapper(trials_per_rank, hypercolumns, minicolumns, number_of_sequences, sequence_length, pattern_seed)
+    aux = serial_wrapper(trials_per_rank, hypercolumns, minicolumns, ns, sequence_length, pattern_seed)
     successes, points_of_failure, persistence_times = aux
     
     aux_success = comm.gather(successes, root=0)
@@ -40,7 +42,7 @@ for ns in number_of_sequences_vector:
     if rank == 0:
         storage_dic_success[ns] = sum(aux_success, [])
         storage_dic_points_of_failure[ns] = sum(aux_failure, [])
-        storage_dic_persistent_times = sum(aux_times, [])
+        storage_dic_persistent_times[ns] = sum(aux_times, [])
         
         
 # Store data as a pickle
