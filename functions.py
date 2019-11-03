@@ -6,11 +6,11 @@ from math import ceil, floor
 from copy import deepcopy
 
 from network import Protocol, NetworkManager, Network
-from patterns_representation import PatternsRepresentation
+from patterns_representation import PatternsRepresentation, build_network_representation
 from analysis_functions import calculate_persistence_time, calculate_recall_quantities, calculate_triad_connectivity
 from plotting_functions import plot_weight_matrix, plot_network_activity_angle, plot_persistent_matrix
 from analysis_functions import calculate_angle_from_history, calculate_winning_pattern_from_distances, calculate_patterns_timings
-from connectivity_functions import get_w_pre_post, get_beta
+from connectivity_functions import get_w_pre_post, get_beta, strict_max
 
 
 def calculate_P_self(T1, tau_z_pre, tau_z_post):

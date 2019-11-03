@@ -1,6 +1,6 @@
 from mpi4py import MPI
 import warnings
-import picke 
+import pickle 
 
 warnings.filterwarnings('ignore')
 
@@ -22,7 +22,7 @@ number_of_sequences = 3
 total_trials = 100
 trials_per_rank = ceil(total_trials / size)
 max_n_seq = floor((minicolumns - 1) ** 2 / sequence_length)
-number_of_sequences_vector = np.arange(2, 10 , 1)
+number_of_sequences_vector = np.arange(2, 50 , 1)
 
 if rank == 0:
     storage_dic_success = {}
