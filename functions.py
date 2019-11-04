@@ -4,6 +4,7 @@ import scipy as sp
 import random
 from math import ceil, floor
 from copy import deepcopy
+import multiprocessing as mp
 
 from network import Protocol, NetworkManager, Network
 from patterns_representation import PatternsRepresentation, build_network_representation
@@ -143,6 +144,16 @@ def calculate_probabililties(patterns, minicolumns):
             
     return probabilities
 
+
+
+##########################################################
+###########################################################3
+# Simulations functions
+##########################################################
+##########################################################
+
+
+
 def activity_to_neural_pattern(pattern, minicolumns):
     network_representation = np.zeros(len(pattern) * minicolumns)
     for hypercolumn_index, minicolumn_index in enumerate(pattern):
@@ -153,8 +164,6 @@ def activity_to_neural_pattern(pattern, minicolumns):
 
 def neural_pattern_to_activity(neural_pattern, minicolumns):
     return [x % minicolumns for x in np.where(neural_pattern == 1)[0]]
-
-
 
 
 def calculate_first_point_of_failure(correct_sequence, recalled_sequence, failure_string):
@@ -397,3 +406,86 @@ def serial_wrapper(trials, hypercolumns, minicolumns, number_of_sequences, seque
         persistence_times.append(persistence_times_trial)
         
     return number_of_successes, points_of_failure, persistence_times
+
+
+#################################
+# Root finding functions
+#################################
+
+def calculate_empirical_probability(trials, hypercolumns, minicolumns, number_of_sequences, sequence_length, pattern_seed):
+    
+    nprocs = mp.cpu_count()
+    trials_per_core = trials / nprocs 
+    trials_list = [ceil(trials_per_core) for i in range(nprocs)]
+    trials = sum(trials_list)
+    seeds = [(i + 1) * (pattern_seed + 1) for i in range(nprocs)]
+    
+    pool = mp.Pool(processes=nprocs)
+    parameter_tuple = [(trials_per_core, hypercolumns, minicolumns, number_of_sequences, sequence_length, seed) for (trials_per_core, seed) in zip(trials_list, seeds)]
+    result = pool.starmap(serial_wrapper, parameter_tuple)
+    pool.close()
+
+    succcess = sum([x[0] for x in result],[])
+    
+    return sum(succcess) / (trials * number_of_sequences)
+
+def get_initial_bounds(desired_root, trials, hypercolumns, minicolumns, sequence_length, pattern_seed, verbose=False):
+    bound = 2
+    p_estimated = 1.0
+    tol = 0.05
+    
+    # Keep increasing the new bound until you passed the root
+    while(p_estimated > desired_root - tol):
+        bound = 2 * bound
+        ns = bound 
+        p_estimated = calculate_empirical_probability(trials, hypercolumns, minicolumns, 
+                                                      ns, sequence_length, pattern_seed)
+        
+        if verbose:
+            print('bound', bound)
+            print('p estimated', p_estimated)
+        
+        
+    return bound * 0.5, bound
+
+
+
+def find_root_empirical(desired_root, trials, hypercolumns, minicolumns, sequence_length, pattern_seed, tolerance=0.01, verbose=False):
+    
+    aux = get_initial_bounds(desired_root, trials, hypercolumns, minicolumns, sequence_length, pattern_seed, verbose=False)
+    left_bound, right_bound = aux
+    
+    while(True):
+        middle = floor((left_bound + right_bound) * 0.5)
+        
+        p = calculate_empirical_probability(trials, hypercolumns, minicolumns, 
+                                            middle, sequence_length, pattern_seed)
+        
+        difference = p - desired_root
+
+        if verbose:
+            print('--------------')
+            print('left bound', left_bound)
+            print('right bound', right_bound)
+            print('middle', middle)
+            print('p', p)
+            print('desired p', desired_root)
+            print('difference', difference)
+
+        if abs(difference) < tolerance:
+            if verbose:
+                print('found')
+            p_root = p
+            break
+
+        if difference < 0.0:  # If p is to the smaller than the desired root   (-------p--*-----)
+            right_bound = middle  # Move the right bound to the middle as the middle is too high
+
+        if difference > 0.0:  # If p is larger than the desired root (---*--p-------)
+            left_bound = middle   # Move the left bound to the middle as the middle is too low 
+
+        if abs(left_bound - right_bound) < 1.5:
+            p_root = p
+            break
+
+    return middle, p_root
