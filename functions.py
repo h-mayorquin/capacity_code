@@ -411,7 +411,6 @@ def serial_wrapper(trials, hypercolumns, minicolumns, number_of_sequences, seque
 #################################
 # Root finding functions
 #################################
-
 def calculate_empirical_probability(trials, hypercolumns, minicolumns, number_of_sequences, sequence_length, pattern_seed):
     
     nprocs = mp.cpu_count()
@@ -429,15 +428,16 @@ def calculate_empirical_probability(trials, hypercolumns, minicolumns, number_of
     
     return sum(succcess) / (trials * number_of_sequences)
 
-def get_initial_bounds(desired_root, trials, hypercolumns, minicolumns, sequence_length, pattern_seed, verbose=False):
+def get_initial_bounds(desired_root, hypercolumns, minicolumns, sequence_length, pattern_seed, tolerance, verbose=False):
+    
     bound = 2
     p_estimated = 1.0
-    tol = 0.05
     
     # Keep increasing the new bound until you passed the root
-    while(p_estimated > desired_root - tol):
+    while(p_estimated > desired_root - tolerance):
         bound = 2 * bound
         ns = bound 
+        trials = min(100, find_trials_required(ns, sigma=tolerance, p=desired_root))
         p_estimated = calculate_empirical_probability(trials, hypercolumns, minicolumns, 
                                                       ns, sequence_length, pattern_seed)
         
@@ -450,14 +450,16 @@ def get_initial_bounds(desired_root, trials, hypercolumns, minicolumns, sequence
 
 
 
-def find_root_empirical(desired_root, trials, hypercolumns, minicolumns, sequence_length, pattern_seed, tolerance=0.01, verbose=False):
+def find_root_empirical(desired_root, hypercolumns, minicolumns, sequence_length, pattern_seed, tolerance=0.01, verbose=False):
     
-    aux = get_initial_bounds(desired_root, trials, hypercolumns, minicolumns, sequence_length, pattern_seed, verbose=False)
+    aux = get_initial_bounds(desired_root, hypercolumns, minicolumns, sequence_length, pattern_seed, tolerance, verbose=verbose)
     left_bound, right_bound = aux
     
     while(True):
         middle = floor((left_bound + right_bound) * 0.5)
         
+        
+        trials = max(5, min(100, find_trials_required(middle, sigma=tolerance, p=desired_root)))
         p = calculate_empirical_probability(trials, hypercolumns, minicolumns, 
                                             middle, sequence_length, pattern_seed)
         
@@ -471,6 +473,7 @@ def find_root_empirical(desired_root, trials, hypercolumns, minicolumns, sequenc
             print('p', p)
             print('desired p', desired_root)
             print('difference', difference)
+            print('trials', trials)
 
         if abs(difference) < tolerance:
             if verbose:
@@ -488,4 +491,25 @@ def find_root_empirical(desired_root, trials, hypercolumns, minicolumns, sequenc
             p_root = p
             break
 
-    return middle, p_root
+    return middle, p_root, trials
+
+
+def find_trials_required(number_of_sequences, sigma, p=0.9):
+    """
+    This gives the number of trials required for give a certain sigma.
+    With this you can set sigma equal to the value that you want to get as standard deviation
+    
+    sigma = 0.01 means that the standard deviation would be 0.01
+    
+    It is better to get sigma = value / 3  to assure yourself that the 3 sigma value (99% per cent approximately)
+    of the stimations would be within 0.01 of the estimated value of p = 0.9
+    """
+    return ceil((p * (1 - p)) / (number_of_sequences * sigma ** 2) - (1 / number_of_sequences))
+
+
+def calculate_p_std(trials, n_s, p=0.9):
+    mean_success = trials * n_s * p
+    a = mean_success 
+    b = trials * n_s - mean_success
+    var_analytical = (a * b) /((a + b + 1) * (a + b) **2) 
+    return np.sqrt(var_analytical)

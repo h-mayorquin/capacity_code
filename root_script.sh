@@ -1,7 +1,7 @@
 #!/bin/bash -l
 
 #SBATCH -A 2018-3-582
-#SBATCH -t 24:00:00
+#SBATCH -t 06:00:00
 #SBATCH -J python_work
 
 #SBATCH --nodes=1
