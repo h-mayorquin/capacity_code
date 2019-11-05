@@ -4,4 +4,4 @@ data_dic = {'hypercolumns': -1, 'minicolumns':-1, 'sequence_length':-1, 'capacit
 
 data_frame = pd.DataFrame(data_dic, index={0})
 
-data_frame.to_csv('./storage_capacity_data.csv')
+data_frame.to_csv('../storage_capacity_data.csv')
