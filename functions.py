@@ -459,7 +459,7 @@ def find_root_empirical(desired_root, hypercolumns, minicolumns, sequence_length
         middle = floor((left_bound + right_bound) * 0.5)
         
         
-        trials = max(5, min(100, find_trials_required(middle, sigma=tolerance, p=desired_root)))
+        trials = max(3, min(100, find_trials_required(middle, sigma=tolerance, p=desired_root)))
         p = calculate_empirical_probability(trials, hypercolumns, minicolumns, 
                                             middle, sequence_length, pattern_seed)
         
@@ -513,3 +513,16 @@ def calculate_p_std(trials, n_s, p=0.9):
     b = trials * n_s - mean_success
     var_analytical = (a * b) /((a + b + 1) * (a + b) **2) 
     return np.sqrt(var_analytical)
+
+def produce_pairs_with_constant_number_of_patterns(n_patterns):
+    sl_old = n_patterns
+    ns = 1
+    pairs = []
+    while(sl_old > 1):
+        sl_new = floor(n_patterns / ns)
+        if sl_new != sl_old:
+            pairs.append((ns - 1, sl_old, sl_old * (ns - 1)))
+        ns += 1
+        sl_old = sl_new
+        
+    return pairs
