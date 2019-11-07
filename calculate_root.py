@@ -20,7 +20,7 @@ verbose = True
 n_patterns = 100
 pairs = produce_pairs_with_constant_number_of_patterns(n_patterns)[3:-3]
 # Format is hypercolumns, minicolumns, extra
-pairs = [(15, 13, 0)]
+pairs = [(3, 66, 0)]
 # Do the calculations
 for pair in pairs:
     hypercolumns, minicolumns, extra = pair

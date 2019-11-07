@@ -411,15 +411,24 @@ def serial_wrapper(trials, hypercolumns, minicolumns, number_of_sequences, seque
 #################################
 # Root finding functions
 #################################
-def calculate_empirical_probability(trials, hypercolumns, minicolumns, number_of_sequences, sequence_length, pattern_seed):
+def calculate_empirical_probability(trials, hypercolumns, minicolumns, number_of_sequences, sequence_length, pattern_seed, verbose=False):
     
     nprocs = mp.cpu_count()
-    trials_per_core = trials / nprocs 
-    trials_list = [ceil(trials_per_core) for i in range(nprocs)]
-    trials = sum(trials_list)
-    seeds = [(i + 1) * (pattern_seed + 1) for i in range(nprocs)]
+    if trials > nprocs:
+        trials_per_core = trials / nprocs 
+        trials_list = [ceil(trials_per_core) for i in range(nprocs)]
+        trials = sum(trials_list)
+        seeds = [(i + 1) * (pattern_seed + 1) for i in range(nprocs)]
+    else:
+        nprocs = trials
+        trials_per_core = 1
+        trials_list = [ceil(trials_per_core) for i in range(nprocs)]
+        trials = sum(trials_list)
+        seeds = [(i + 1) * (pattern_seed + 1) for i in range(nprocs)]
+    print('nprocs', nprocs)
+    print('trials', trials)
     
-    pool = mp.Pool(processes=nprocs)
+    pool = mp.Pool(processes=nprocs) 
     parameter_tuple = [(trials_per_core, hypercolumns, minicolumns, number_of_sequences, sequence_length, seed) for (trials_per_core, seed) in zip(trials_list, seeds)]
     result = pool.starmap(serial_wrapper, parameter_tuple)
     pool.close()
@@ -439,29 +448,33 @@ def get_initial_bounds(desired_root, hypercolumns, minicolumns, sequence_length,
         ns = bound 
         trials = min(100, find_trials_required(ns, sigma=tolerance, p=desired_root))
         p_estimated = calculate_empirical_probability(trials, hypercolumns, minicolumns, 
-                                                      ns, sequence_length, pattern_seed)
+                                                      ns, sequence_length, pattern_seed, verbose)
         
         if verbose:
             print('bound', bound)
             print('p estimated', p_estimated)
         
         
-    return bound * 0.5, bound
+    return bound * 0.5, bound, p_estimated
 
 
 
 def find_root_empirical(desired_root, hypercolumns, minicolumns, sequence_length, pattern_seed, tolerance=0.01, verbose=False):
     
     aux = get_initial_bounds(desired_root, hypercolumns, minicolumns, sequence_length, pattern_seed, tolerance, verbose=verbose)
-    left_bound, right_bound = aux
+    left_bound, right_bound, p_estimated = aux
     
-    while(True):
+    calculate = True
+    if abs(p_estimated - desired_root) < tolerance:
+        calculate = False
+    
+    while(calculate):
         middle = floor((left_bound + right_bound) * 0.5)
         
         
         trials = max(3, min(100, find_trials_required(middle, sigma=tolerance, p=desired_root)))
         p = calculate_empirical_probability(trials, hypercolumns, minicolumns, 
-                                            middle, sequence_length, pattern_seed)
+                                            middle, sequence_length, pattern_seed, verbose)
         
         difference = p - desired_root
 
@@ -488,6 +501,14 @@ def find_root_empirical(desired_root, hypercolumns, minicolumns, sequence_length
             left_bound = middle   # Move the left bound to the middle as the middle is too low 
 
         if abs(left_bound - right_bound) < 1.5:
+            if difference > 0:   # If p estimated is larger than desired go further to the right
+                middle = right_bound
+                p = calculate_empirical_probability(trials, hypercolumns, minicolumns, 
+                                                    middle, sequence_length, pattern_seed)
+            else:
+                middle = left_bound
+                p = calculate_empirical_probability(trials, hypercolumns, minicolumns, 
+                                                    middle, sequence_length, pattern_seed)
             p_root = p
             break
 
