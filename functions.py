@@ -422,7 +422,7 @@ def calculate_empirical_probability(trials, hypercolumns, minicolumns, number_of
     else:
         nprocs = trials
         trials_per_core = 1
-        trials_list = [ceil(trials_per_core) for i in range(nprocs)]
+        trials_list = [1 for i in range(nprocs)]
         trials = sum(trials_list)
         seeds = [(i + 1) * (pattern_seed + 1) for i in range(nprocs)]
     print('nprocs', nprocs)

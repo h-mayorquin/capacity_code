@@ -1,13 +1,14 @@
 from mpi4py import MPI
 import warnings
 import pickle 
-
-warnings.filterwarnings('ignore')
+import itertools
 
 import numpy as np
 import random
 from math import ceil, floor
 from copy import deepcopy
+warnings.filterwarnings('ignore')
+
 from functions import *
 
 comm = MPI.COMM_WORLD
