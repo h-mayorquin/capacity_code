@@ -17,9 +17,9 @@ size = comm.Get_size()
 # Run a dummy example
 hypercolumns = 5
 minicolumns = 10
-total_trials = 100
+total_trials = 200
 trials_per_rank = ceil(total_trials / size)
-trials = rials_per_rank * size
+trials = trials_per_rank * size
 
 
 sequence_lengths_vector = [3, 4, 5, 6, 7, 8, 9]

@@ -2,7 +2,7 @@
 
 #SBATCH -A 2018-3-582
 #SBATCH -t 04:00:00
-#SBATCH -J pair
+#SBATCH -J length_scaling
 
 #SBATCH --nodes=4
 #SBATCH --ntasks-per-node=32
