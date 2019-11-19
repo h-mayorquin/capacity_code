@@ -18,11 +18,11 @@ rank = comm.Get_rank()
 size = comm.Get_size()
 
 # Run a dummy example
-tau_z_pre = 0.050
-tau_a = 0.150
-hypercolumns = 5
-minicolumns = 10
-sequence_length = sys.argv[1]
+tau_z_pre = float(sys.argv[4])
+tau_a = float(sys.argv[5])
+hypercolumns = int(sys.argv[2])
+minicolumns = int(sys.argv[3])
+sequence_length = int(sys.argv[1])
 number_of_sequences = 3
 total_trials = 100
 trials_per_rank = ceil(total_trials / size)
@@ -60,6 +60,6 @@ if rank == 0:
                'hypercolumns': hypercolumns, 'minicolumns': minicolumns, 'number_of_sequences':number_of_sequences_vector, 
                 'sequence_length': sequence_length, 'pairs':storage_dic_pairs}
     
-    filename = sys.argv[2]
+    filename = sys.argv[6]
     with open(filename, 'wb') as handle:
         pickle.dump(save_dic, handle, protocol=pickle.HIGHEST_PROTOCOL)
