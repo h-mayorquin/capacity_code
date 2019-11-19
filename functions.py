@@ -166,33 +166,7 @@ def neural_pattern_to_activity(neural_pattern, minicolumns):
     return [x % minicolumns for x in np.where(neural_pattern == 1)[0]]
 
 
-def calculate_first_point_of_failure(correct_sequence, recalled_sequence, failure_string):
-    matching_vector = np.prod(correct_sequence == recalled_sequence, axis=1)
-    points_of_failure = np.where(matching_vector == 0)[0]
-    if points_of_failure.sum() > 0:
-        first_point_of_failure = np.min(np.where(matching_vector == 0)[0])
-    else:
-        first_point_of_failure = failure_string
 
-    return first_point_of_failure
-
-def create_w_and_beta(patterns_to_train, hypercolumns, minicolumns, number_of_sequences, sequence_length, training_time, tau_z_pre, tau_z_post, epsilon):
-
-    Tp = training_time 
-    Ts = 0
-    P = np.zeros((minicolumns * hypercolumns, minicolumns * hypercolumns))
-    for sequence_index in range(number_of_sequences):
-        sequence = patterns_to_train.reshape((number_of_sequences, sequence_length, hypercolumns))[sequence_index, :]
-        P += build_P(sequence, hypercolumns, minicolumns, tau_z_pre, tau_z_post, 
-                     Tp, Ts, lower_bound=1e-6, verbose = False)
-
-    value = (Tp ) / (Tp * (number_of_sequences * sequence_length))
-    p = calculate_probabililties(patterns_to_train, minicolumns) * value
-
-    w = get_w_pre_post(P, p, p, epsilon, diagonal_zero=False)
-    beta = get_beta(p, epsilon)
-    
-    return w, beta
 
 def build_dictionary_of_patterns(patterns_to_train, minicolumns):
 
@@ -302,51 +276,45 @@ def calculate_patterns_timings(winning_patterns, dt, remove=0):
     return patterns_timings
 
 
-def calculate_recalled_patterns(sequence, T_cue, T_recall, dt, w, beta, tau_s, tau_a, g_a, patterns_dic, hypercolumns, minicolumns, remove):
-    sequence_cue = sequence[0]
-    
-    winners = run_network_recall(sequence_cue, T_cue, T_recall, dt, w, beta, tau_s, tau_a, g_a, patterns_dic, hypercolumns, minicolumns)
-    timings = calculate_patterns_timings(winners, dt, remove=remove)
 
-    # Get the list of the recalled patterns
-    nr_list = [patterns_dic[x[0]] for x in timings]
-    recalled_patterns = [[x % minicolumns for x in np.where(neural_representation == 1)[0]] for neural_representation in nr_list]
-
-    # Get the persistent times (exluding the first as it comes from the cue)
-    persistence_times = [x[1] for x in timings][1:]
+def serial_wrapper(trials, hypercolumns, minicolumns, number_of_sequences, sequence_length, pattern_seed):
     
-    return recalled_patterns, persistence_times
-
-def calculate_sequences_statistics(patterns_to_train, hypercolumns, minicolumns, number_of_sequences, sequence_length, 
-                                   T_cue, T_recall, dt, w, beta, tau_s, tau_a, g_a, patterns_dic, remove):
+    # Probably should be changed 
+    tau_z_pre = 0.050
+    dt = 0.001
     
-    correctly_recalled = []
+    # Trial parameters (change not very often)
+    tau_z_post = 0.005
+    training_time = 0.100
+    epsilon = 1e-20
+    remove = 0.010
+    tau_s = 0.010
+    g_a = 2.0
+    tau_a = 0.150
+
+    T_cue = tau_s
+    T_recall = 0.050 * (sequence_length - 1) + 0.050
+
+    random.seed(pattern_seed)
+
+    number_of_successes = []
     points_of_failure = []
     persistence_times = []
-    reshaped_patterns = patterns_to_train.reshape((number_of_sequences, sequence_length, hypercolumns))
-    
-    for sequence_index in range(number_of_sequences):
-        sequence = reshaped_patterns[sequence_index, :]
 
-        aux = calculate_recalled_patterns(sequence, T_cue, T_recall, dt, w, beta, tau_s, tau_a, g_a, 
-                                          patterns_dic, hypercolumns, minicolumns, remove)
+    for _ in range(trials):
+        aux = run_recall_trial(hypercolumns, minicolumns, number_of_sequences, sequence_length, dt, tau_z_pre, T_cue, T_recall,
+                         tau_z_post, training_time, remove, tau_s, g_a, tau_a, epsilon)
+        correctly_recalled, points_of_failure_trial, persistence_times_trial, seq_and_recalled_pairs = aux 
 
-        recalled_patterns, T_per = aux
-        persistence_times += T_per
+        # Append to lists
+        n_recalled = sum(correctly_recalled)
+
+        number_of_successes.append(n_recalled)
+        points_of_failure.append(points_of_failure_trial)
+        persistence_times.append(persistence_times_trial)
         
-        # Get the persistent times
-        if len(recalled_patterns) >= sequence_length:
-            # This probably can be changed to check if the first point of failure is larger than sequence length
-            correctly_recalled.append((sequence == recalled_patterns[:sequence_length]).all())
-            first_point_of_failure = calculate_first_point_of_failure(sequence, recalled_patterns[:sequence_length], 'success')
-        else:
-            correctly_recalled.append(False)
-            first_point_of_failure = calculate_first_point_of_failure(sequence[:len(recalled_patterns)], recalled_patterns[:sequence_length], 'too short')
+    return number_of_successes, points_of_failure, persistence_times, seq_and_recalled_pairs
 
-        # For every sequences calculate the first point of failure
-        points_of_failure.append(first_point_of_failure)
-    
-    return correctly_recalled, points_of_failure, persistence_times
 
 def run_recall_trial(hypercolumns, minicolumns, number_of_sequences, sequence_length, dt, tau_z_pre, T_cue, T_recall,
                      tau_z_post, training_time, remove, tau_s, g_a, tau_a, epsilon):
@@ -364,48 +332,85 @@ def run_recall_trial(hypercolumns, minicolumns, number_of_sequences, sequence_le
     aux = calculate_sequences_statistics(patterns_to_train, hypercolumns, minicolumns, number_of_sequences, sequence_length, 
                                          T_cue, T_recall, dt, w, beta, tau_s, tau_a, g_a, patterns_dic, remove)
     
-    correctly_recalled, point_of_failure, persistence_times = aux
+    correctly_recalled, point_of_failure, persistence_times, seq_and_recalled_pairs = aux
     
-    return correctly_recalled, point_of_failure, persistence_times
+    return correctly_recalled, point_of_failure, persistence_times, seq_and_recalled_pairs
 
+def create_w_and_beta(patterns_to_train, hypercolumns, minicolumns, number_of_sequences, sequence_length, training_time, tau_z_pre, tau_z_post, epsilon):
 
-def serial_wrapper(trials, hypercolumns, minicolumns, number_of_sequences, sequence_length, pattern_seed):
+    Tp = training_time 
+    Ts = 0
+    P = np.zeros((minicolumns * hypercolumns, minicolumns * hypercolumns))
+    for sequence_index in range(number_of_sequences):
+        sequence = patterns_to_train.reshape((number_of_sequences, sequence_length, hypercolumns))[sequence_index, :]
+        P += build_P(sequence, hypercolumns, minicolumns, tau_z_pre, tau_z_post, 
+                     Tp, Ts, lower_bound=1e-6, verbose = False)
+
+    value = (Tp ) / (Tp * (number_of_sequences * sequence_length))
+    p = calculate_probabililties(patterns_to_train, minicolumns) * value
+
+    w = get_w_pre_post(P, p, p, epsilon, diagonal_zero=False)
+    beta = get_beta(p, epsilon)
     
-    # Probably should be changed 
-    tau_z_pre = 0.050
-    dt = 0.001
+    return w, beta
+
+def calculate_sequences_statistics(patterns_to_train, hypercolumns, minicolumns, number_of_sequences, sequence_length, 
+                                   T_cue, T_recall, dt, w, beta, tau_s, tau_a, g_a, patterns_dic, remove):
     
-    # Trial parameters (change not very often)
-    tau_z_post = 0.005
-    training_time = 0.100
-    epsilon = 1e-20
-    remove = 0.010
-    tau_s = 0.010
-    g_a = 2.0
-    tau_a = 0.150
-
-    T_cue = 0.050
-    T_recall = 0.050 * (sequence_length - 1)
-
-    random.seed(pattern_seed)
-
-    number_of_successes = []
+    correctly_recalled = []
     points_of_failure = []
     persistence_times = []
+    reshaped_patterns = patterns_to_train.reshape((number_of_sequences, sequence_length, hypercolumns))
+    
+    for sequence_index in range(number_of_sequences):
+        sequence = reshaped_patterns[sequence_index, :]
 
-    for _ in range(trials):
-        aux = run_recall_trial(hypercolumns, minicolumns, number_of_sequences, sequence_length, dt, tau_z_pre, T_cue, T_recall,
-                         tau_z_post, training_time, remove, tau_s, g_a, tau_a, epsilon)
-        correctly_recalled, points_of_failure_trial, persistence_times_trial = aux 
+        aux = calculate_recalled_patterns(sequence, T_cue, T_recall, dt, w, beta, tau_s, tau_a, g_a, 
+                                          patterns_dic, hypercolumns, minicolumns, remove)
 
-        # Append to lists
-        n_recalled = sum(correctly_recalled)
-
-        number_of_successes.append(n_recalled)
-        points_of_failure.append(points_of_failure_trial)
-        persistence_times.append(persistence_times_trial)
+        recalled_patterns, T_per = aux
+        persistence_times.append(T_per)
         
-    return number_of_successes, points_of_failure, persistence_times
+        # Get the persistent times
+        if len(recalled_patterns) >= sequence_length:
+            # This probably can be changed to check if the first point of failure is larger than sequence length
+            correctly_recalled.append((sequence == recalled_patterns[:sequence_length]).all())
+            first_point_of_failure = calculate_first_point_of_failure(sequence, recalled_patterns[:sequence_length], 'success')
+        else:
+            correctly_recalled.append(False)
+            first_point_of_failure = calculate_first_point_of_failure(sequence[:len(recalled_patterns)], recalled_patterns[:sequence_length], 'too short')
+
+        # For every sequences calculate the first point of failure
+        points_of_failure.append(first_point_of_failure)
+    
+    return correctly_recalled, points_of_failure, persistence_times, (sequence, recalled_patterns)
+
+def calculate_recalled_patterns(sequence, T_cue, T_recall, dt, w, beta, tau_s, tau_a, g_a, patterns_dic, hypercolumns, minicolumns, remove):
+    sequence_cue = sequence[0]
+    
+    winners = run_network_recall(sequence_cue, T_cue, T_recall, dt, w, beta, tau_s, tau_a, g_a, patterns_dic, hypercolumns, minicolumns)
+    timings = calculate_patterns_timings(winners, dt, remove=remove)
+
+    # Get the list of the recalled patterns
+    nr_list = [patterns_dic[x[0]] for x in timings]
+    recalled_patterns = [[x % minicolumns for x in np.where(neural_representation == 1)[0]] for neural_representation in nr_list]
+
+    # Get the persistent times (exluding the first as it comes from the cue)
+    persistence_times = [x[1] for x in timings]
+    
+    return recalled_patterns, persistence_times
+
+def calculate_first_point_of_failure(correct_sequence, recalled_sequence, failure_string):
+    matching_vector = np.prod(correct_sequence == recalled_sequence, axis=1)
+    points_of_failure = np.where(matching_vector == 0)[0]
+    if points_of_failure.sum() > 0:
+        first_point_of_failure = np.min(np.where(matching_vector == 0)[0])
+    else:
+        first_point_of_failure = failure_string
+
+    return first_point_of_failure
+
+
 
 
 #################################

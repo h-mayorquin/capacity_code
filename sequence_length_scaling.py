@@ -8,6 +8,7 @@ import numpy as np
 import random
 from math import ceil, floor
 from copy import deepcopy
+import itertools
 from functions import *
 
 comm = MPI.COMM_WORLD
@@ -52,7 +53,7 @@ for sl, ns in itertools.product(sequence_lengths_vector, number_of_sequences_vec
     
      # Sequence of twos 
     sequence_length = 2
-    number_of_sequences = n_transitions
+    number_of_sequences = int(n_transitions / (sequence_length - 1)
     aux = serial_wrapper(trials_per_rank, hypercolumns, minicolumns, number_of_sequences, sequence_length, pattern_seed)
     successes, points_of_failure, persistence_times = aux
     

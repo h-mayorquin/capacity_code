@@ -22,35 +22,39 @@ sequence_length = 2
 number_of_sequences = 3
 total_trials = 100
 trials_per_rank = ceil(total_trials / size)
-max_n_seq = floor((minicolumns - 1) ** 2 / sequence_length)
-number_of_sequences_vector = np.arange(2, 50 , 1)
+max_transitions = 100
+transitions_per_sequence = sequence_length - 1
+max_ns = floor(max_transitions / transitions_per_sequence)
+number_of_sequences_vector = np.arange(2, max_ns , 1)
 
 if rank == 0:
     storage_dic_success = {}
     storage_dic_points_of_failure = {}
     storage_dic_persistent_times = {}
+    storage_dic_pairs = {}
     
 pattern_seed = rank
 for ns in number_of_sequences_vector:
-
+    
     aux = serial_wrapper(trials_per_rank, hypercolumns, minicolumns, ns, sequence_length, pattern_seed)
-    successes, points_of_failure, persistence_times = aux
+    successes, points_of_failure, persistence_times, seq_recalled_pairs = aux
     
     aux_success = comm.gather(successes, root=0)
     aux_failure = comm.gather(points_of_failure, root=0)
     aux_times = comm.gather(persistence_times, root=0)
-
+    aux_pairs = comm.gather(seq_recalled_pairs, root=0)
+    
     if rank == 0:
         storage_dic_success[ns] = sum(aux_success, [])
         storage_dic_points_of_failure[ns] = sum(aux_failure, [])
         storage_dic_persistent_times[ns] = sum(aux_times, [])
-        
+        storage_dic_pairs[ns] = sum(aux_pairs, [])
         
 # Store data as a pickle
 if rank == 0:
     save_dic = {'success': storage_dic_success, 'points_of_failure':storage_dic_points_of_failure, 'persistent_times':storage_dic_persistent_times, 
                'hypercolumns': hypercolumns, 'minicolumns': minicolumns, 'number_of_sequences':number_of_sequences_vector, 
-                'sequence_length': sequence_length}
+                'sequence_length': sequence_length, 'pairs':storage_dic_pairs}
     
     filename = './data.pickle'
     with open(filename, 'wb') as handle:
