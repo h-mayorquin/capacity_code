@@ -10,7 +10,7 @@
 #SBATCH -e error_file.e
 #SBATCH -o printed.o
 
-sequence_length=2
+sequence_length=4
 output="./data.pickle"
 
 module load mpi4py/3.0.2/py37
