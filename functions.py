@@ -300,11 +300,12 @@ def serial_wrapper(trials, hypercolumns, minicolumns, number_of_sequences, seque
     number_of_successes = []
     points_of_failure = []
     persistence_times = []
+    pair_of_seq_and_recalled = []
 
     for _ in range(trials):
         aux = run_recall_trial(hypercolumns, minicolumns, number_of_sequences, sequence_length, dt, tau_z_pre, T_cue, T_recall,
                          tau_z_post, training_time, remove, tau_s, g_a, tau_a, epsilon)
-        correctly_recalled, points_of_failure_trial, persistence_times_trial, seq_and_recalled_pairs = aux 
+        correctly_recalled, points_of_failure_trial, persistence_times_trial, pairs = aux 
 
         # Append to lists
         n_recalled = sum(correctly_recalled)
@@ -312,8 +313,9 @@ def serial_wrapper(trials, hypercolumns, minicolumns, number_of_sequences, seque
         number_of_successes.append(n_recalled)
         points_of_failure.append(points_of_failure_trial)
         persistence_times.append(persistence_times_trial)
+        pair_of_seq_and_recalled.append(pairs)
         
-    return number_of_successes, points_of_failure, persistence_times, seq_and_recalled_pairs
+    return number_of_successes, points_of_failure, persistence_times, pair_of_seq_and_recalled
 
 
 def run_recall_trial(hypercolumns, minicolumns, number_of_sequences, sequence_length, dt, tau_z_pre, T_cue, T_recall,
