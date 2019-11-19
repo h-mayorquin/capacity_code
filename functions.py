@@ -473,6 +473,8 @@ def find_root_empirical(desired_root, hypercolumns, minicolumns, sequence_length
     
     calculate = True
     if abs(p_estimated - desired_root) < tolerance:
+        p_root = p_estimated
+        middle = right_bound
         calculate = False
     
     while(calculate):

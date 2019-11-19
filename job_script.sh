@@ -1,7 +1,7 @@
 #!/bin/bash -l
 
 #SBATCH -A 2018-3-582
-#SBATCH -t 04:00:00
+#SBATCH -t 01:00:00
 #SBATCH -J sequence
 
 #SBATCH --nodes=4
