@@ -2,6 +2,8 @@ from mpi4py import MPI
 import warnings
 import pickle 
 import itertools
+import sys
+
 
 import numpy as np
 import random
@@ -16,9 +18,11 @@ rank = comm.Get_rank()
 size = comm.Get_size()
 
 # Run a dummy example
+tau_z_pre = 0.050
+tau_a = 0.150
 hypercolumns = 5
 minicolumns = 10
-sequence_length = 2
+sequence_length = sys.argv[1]
 number_of_sequences = 3
 total_trials = 100
 trials_per_rank = ceil(total_trials / size)
@@ -36,7 +40,7 @@ if rank == 0:
 pattern_seed = rank
 for ns in number_of_sequences_vector:
     
-    aux = serial_wrapper(trials_per_rank, hypercolumns, minicolumns, ns, sequence_length, pattern_seed)
+    aux = serial_wrapper(trials_per_rank, hypercolumns, minicolumns, ns, sequence_length, pattern_seed, tau_z_pre, tau_a)
     successes, points_of_failure, persistence_times, seq_recalled_pairs = aux
     
     aux_success = comm.gather(successes, root=0)
@@ -56,6 +60,6 @@ if rank == 0:
                'hypercolumns': hypercolumns, 'minicolumns': minicolumns, 'number_of_sequences':number_of_sequences_vector, 
                 'sequence_length': sequence_length, 'pairs':storage_dic_pairs}
     
-    filename = './data.pickle'
+    filename = sys.argv[2]
     with open(filename, 'wb') as handle:
         pickle.dump(save_dic, handle, protocol=pickle.HIGHEST_PROTOCOL)

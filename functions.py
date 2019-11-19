@@ -277,10 +277,10 @@ def calculate_patterns_timings(winning_patterns, dt, remove=0):
 
 
 
-def serial_wrapper(trials, hypercolumns, minicolumns, number_of_sequences, sequence_length, pattern_seed):
+def serial_wrapper(trials, hypercolumns, minicolumns, number_of_sequences, sequence_length, pattern_seed, tau_z_pre=0.050):
     
     # Probably should be changed 
-    tau_z_pre = 0.050
+    tau_z_pre = tau_z_pre
     dt = 0.001
     
     # Trial parameters (change not very often)
