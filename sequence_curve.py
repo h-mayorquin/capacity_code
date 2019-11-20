@@ -58,7 +58,7 @@ for ns in number_of_sequences_vector:
 if rank == 0:
     save_dic = {'success': storage_dic_success, 'points_of_failure':storage_dic_points_of_failure, 'persistent_times':storage_dic_persistent_times, 
                'hypercolumns': hypercolumns, 'minicolumns': minicolumns, 'number_of_sequences':number_of_sequences_vector, 
-                'sequence_length': sequence_length, 'pairs':storage_dic_pairs}
+                'sequence_length': sequence_length, 'pairs':storage_dic_pairs, 'trials':total_trials, 'tau_z_pre':tau_z_pre, 'tau_a':tau_a}
     
     filename = sys.argv[6]
     with open(filename, 'wb') as handle:

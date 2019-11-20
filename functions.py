@@ -363,15 +363,19 @@ def calculate_sequences_statistics(patterns_to_train, hypercolumns, minicolumns,
     points_of_failure = []
     persistence_times = []
     reshaped_patterns = patterns_to_train.reshape((number_of_sequences, sequence_length, hypercolumns))
+    sequences_to_store = []
+    recalled_to_store = []
     
     for sequence_index in range(number_of_sequences):
         sequence = reshaped_patterns[sequence_index, :]
+        sequences_to_store.append(sequence)
 
         aux = calculate_recalled_patterns(sequence, T_cue, T_recall, dt, w, beta, tau_s, tau_a, g_a, 
                                           patterns_dic, hypercolumns, minicolumns, remove)
 
         recalled_patterns, T_per = aux
         persistence_times.append(T_per)
+        recalled_to_store.append(recalled_patterns)
         
         # Get the persistent times
         if len(recalled_patterns) >= sequence_length:
@@ -385,7 +389,7 @@ def calculate_sequences_statistics(patterns_to_train, hypercolumns, minicolumns,
         # For every sequences calculate the first point of failure
         points_of_failure.append(first_point_of_failure)
     
-    return correctly_recalled, points_of_failure, persistence_times, (sequence, recalled_patterns)
+    return correctly_recalled, points_of_failure, persistence_times, (sequences_to_store, recalled_to_store)
 
 def calculate_recalled_patterns(sequence, T_cue, T_recall, dt, w, beta, tau_s, tau_a, g_a, patterns_dic, hypercolumns, minicolumns, remove):
     sequence_cue = sequence[0]
