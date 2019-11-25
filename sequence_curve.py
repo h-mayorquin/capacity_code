@@ -23,6 +23,8 @@ tau_a = float(sys.argv[5])
 hypercolumns = int(sys.argv[2])
 minicolumns = int(sys.argv[3])
 sequence_length = int(sys.argv[1])
+recall_dynamics = 'normal'
+memory=True
 number_of_sequences = 3
 total_trials = 100
 trials_per_rank = ceil(total_trials / size)
@@ -40,7 +42,7 @@ if rank == 0:
 pattern_seed = rank
 for ns in number_of_sequences_vector:
     
-    aux = serial_wrapper(trials_per_rank, hypercolumns, minicolumns, ns, sequence_length, pattern_seed, tau_z_pre, tau_a)
+    aux = serial_wrapper(trials_per_rank, hypercolumns, minicolumns, ns, sequence_length, pattern_seed, tau_z_pre, tau_a, memory=memory, recall_dynamics)
     successes, points_of_failure, persistence_times, seq_recalled_pairs = aux
     
     aux_success = comm.gather(successes, root=0)
@@ -58,7 +60,7 @@ for ns in number_of_sequences_vector:
 if rank == 0:
     save_dic = {'success': storage_dic_success, 'points_of_failure':storage_dic_points_of_failure, 'persistent_times':storage_dic_persistent_times, 
                'hypercolumns': hypercolumns, 'minicolumns': minicolumns, 'number_of_sequences':number_of_sequences_vector, 
-                'sequence_length': sequence_length, 'pairs':storage_dic_pairs, 'trials':total_trials, 'tau_z_pre':tau_z_pre, 'tau_a':tau_a}
+                'sequence_length': sequence_length, 'trials':total_trials, 'tau_z_pre':tau_z_pre, 'tau_a':tau_a, 'memory':memory, 'recall_dyanmics':recall_dynamics}
     
     filename = sys.argv[6]
     with open(filename, 'wb') as handle:
