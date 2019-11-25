@@ -219,7 +219,7 @@ def calculate_patterns_timings(winning_patterns, dt, remove=0):
 
 
 def serial_wrapper(trials, hypercolumns, minicolumns, number_of_sequences, sequence_length, pattern_seed,
-                   tau_z_pre=0.050, tau_a=0.150, memory=True, recall_dynamics='normala'):
+                   tau_z_pre=0.050, tau_z_slow=0.005, tau_a=0.150, memory=True, recall_dynamics='normala'):
     
     # Probably should be changed 
     tau_z_pre = tau_z_pre
@@ -235,7 +235,6 @@ def serial_wrapper(trials, hypercolumns, minicolumns, number_of_sequences, seque
     tau_a = tau_a
     
     tau_z_fast = tau_z_pre
-    tau_z_slow = 1.0
     #recall_dynamics = 'normal'  #('normala', 'one_tracea')
 
     T_cue = tau_s
@@ -273,12 +272,15 @@ def run_recall_trial(hypercolumns, minicolumns, number_of_sequences, sequence_le
     # Calculate the weights and biases
     w, beta = create_w_and_beta(patterns_to_train, hypercolumns, minicolumns, number_of_sequences, 
                                 sequence_length, training_time, tau_z_pre, tau_z_post, epsilon, memory=memory)
+    
+    w_slow, beta_slow = create_w_and_beta(patterns_to_train, hypercolumns, minicolumns, number_of_sequences, 
+                                sequence_length, training_time, tau_z_slow, tau_z_post, epsilon, memory=memory)
     # Build a dictionary with all the patterns
     patterns_dic = build_dictionary_of_patterns(patterns_to_train, minicolumns)
     
     # Calculate the statitsics for the sequences
     aux = calculate_sequences_statistics(patterns_to_train, hypercolumns, minicolumns, number_of_sequences, sequence_length, 
-                                         T_cue, T_recall, dt, w, beta, tau_s, tau_a, g_a, patterns_dic, remove, recall_dynamics, tau_z_slow, tau_z_fast)
+                                         T_cue, T_recall, dt, w, w_slow, beta, beta_slow, tau_s, tau_a, g_a, patterns_dic, remove, recall_dynamics, tau_z_slow, tau_z_fast)
     
     correctly_recalled, point_of_failure, persistence_times, seq_and_recalled_pairs = aux
     
@@ -304,7 +306,7 @@ def create_w_and_beta(patterns_to_train, hypercolumns, minicolumns, number_of_se
     return w, beta
 
 def calculate_sequences_statistics(patterns_to_train, hypercolumns, minicolumns, number_of_sequences, sequence_length, 
-                                   T_cue, T_recall, dt, w, beta, tau_s, tau_a, g_a, patterns_dic, remove, recall_dynamics, tau_z_slow, tau_z_fast):
+                                   T_cue, T_recall, dt, w, w_slow, beta, beta_slow, tau_s, tau_a, g_a, patterns_dic, remove, recall_dynamics, tau_z_slow, tau_z_fast):
     
     correctly_recalled = []
     points_of_failure = []
@@ -317,7 +319,7 @@ def calculate_sequences_statistics(patterns_to_train, hypercolumns, minicolumns,
         sequence = reshaped_patterns[sequence_index, :]
         sequences_to_store.append(sequence)
 
-        aux = calculate_recalled_patterns(sequence, T_cue, T_recall, dt, w, beta, tau_s, tau_a, g_a, 
+        aux = calculate_recalled_patterns(sequence, T_cue, T_recall, dt, w, w_slow, beta, beta_slow, tau_s, tau_a, g_a, 
                                           patterns_dic, hypercolumns, minicolumns, remove, recall_dynamics, tau_z_slow, tau_z_fast)
 
         recalled_patterns, T_per = aux
@@ -338,11 +340,11 @@ def calculate_sequences_statistics(patterns_to_train, hypercolumns, minicolumns,
     
     return correctly_recalled, points_of_failure, persistence_times, (sequences_to_store, recalled_to_store)
 
-def calculate_recalled_patterns(sequence, T_cue, T_recall, dt, w, beta, tau_s, tau_a, g_a, patterns_dic, hypercolumns, minicolumns, remove, 
+def calculate_recalled_patterns(sequence, T_cue, T_recall, dt, w, w_slow, beta, beta_slow, tau_s, tau_a, g_a, patterns_dic, hypercolumns, minicolumns, remove, 
                                 recall_dynamics, tau_z_slow, tau_z_fast):
     sequence_cue = sequence[0]
     
-    winners = run_network_recall(sequence_cue, T_cue, T_recall, dt, w, beta, tau_s, tau_a, g_a, patterns_dic, hypercolumns, minicolumns, 
+    winners = run_network_recall(sequence_cue, T_cue, T_recall, dt, w, w_slow, beta, beta_slow, tau_s, tau_a, g_a, patterns_dic, hypercolumns, minicolumns, 
                                  recall_dynamics, tau_z_slow, tau_z_fast)
     timings = calculate_patterns_timings(winners, dt, remove=remove)
 
@@ -365,7 +367,7 @@ def calculate_first_point_of_failure(correct_sequence, recalled_sequence, failur
 
     return first_point_of_failure
 
-def run_network_recall(sequence_cue, T_cue, T_recall, dt, w, beta, tau_s, tau_a, g_a, patterns_dic, hypercolumns, minicolumns, 
+def run_network_recall(sequence_cue, T_cue, T_recall, dt, w, w_slow, beta, beta_slow, tau_s, tau_a, g_a, patterns_dic, hypercolumns, minicolumns, 
                        recall_dynamics, tau_z_slow, tau_z_fast):
 
     nt_cue = int(T_cue / dt)
@@ -387,7 +389,7 @@ def run_network_recall(sequence_cue, T_cue, T_recall, dt, w, beta, tau_s, tau_a,
     g_I = 10.0
     for i in range(nt_cue):
         # Step ahead
-        o, s, a, z_slow, z_fast = update_continuous(dt, tau_s, tau_a, g_a, w, beta, g_I, I_cue, s, o, a, z_slow, z_fast, 
+        o, s, a, z_slow, z_fast = update_continuous(dt, tau_s, tau_a, g_a, w, w_slow, beta, beta_slow, g_I, I_cue, s, o, a, z_slow, z_fast, 
                                                     hypercolumns, minicolumns, recall_dynamics, tau_z_fast)
         # Calculate winner
         winner = calculate_step_winner(o, patterns_dic)
@@ -397,7 +399,7 @@ def run_network_recall(sequence_cue, T_cue, T_recall, dt, w, beta, tau_s, tau_a,
     g_I = 0.0
     for i in range(nt_recall):
         # Step ahead
-        o, s, a, z_slow, z_fast = update_continuous(dt, tau_s, tau_a, g_a, w, beta, g_I, I_cue, s, o, a, z_slow, z_fast, 
+        o, s, a, z_slow, z_fast = update_continuous(dt, tau_s, tau_a, g_a, w, w_slow, beta, beta_slow, g_I, I_cue, s, o, a, z_slow, z_fast, 
                                                     hypercolumns, minicolumns, recall_dynamics, tau_z_fast)
         # Calculate winner
         winner = calculate_step_winner(o, patterns_dic)
@@ -407,7 +409,7 @@ def run_network_recall(sequence_cue, T_cue, T_recall, dt, w, beta, tau_s, tau_a,
     return winners
 
 
-def update_continuous(dt, tau_s, tau_a, g_a, w, beta, g_I, I, s, o, a, z_slow, z_fast,
+def update_continuous(dt, tau_s, tau_a, g_a, w, w_slow, beta, beta_slow, g_I, I, s, o, a, z_slow, z_fast,
                       hypercolumns, minicolumns, recall_dynamics, tau_z_fast):
     
     # Calculate currents
@@ -416,7 +418,7 @@ def update_continuous(dt, tau_s, tau_a, g_a, w, beta, g_I, I, s, o, a, z_slow, z
     if recall_dynamics[:-1] == 'one_trace':
         i = w @ z_fast / hypercolumns
     if recall_dynamics[:-1] == 'two_traces':
-        i = (w @ z_fast + w @ z_slow) / hypercolumns
+        i = (w @ z_fast + w_slow @ z_slow) / hypercolumns
     
     s += (dt / tau_s)  * (i  # Current
                        + beta  # Bias
