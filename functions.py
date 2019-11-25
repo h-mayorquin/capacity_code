@@ -219,7 +219,7 @@ def calculate_patterns_timings(winning_patterns, dt, remove=0):
 
 
 def serial_wrapper(trials, hypercolumns, minicolumns, number_of_sequences, sequence_length, pattern_seed,
-                   tau_z_pre=0.050, tau_a=0.150, memory=True, recall_dynamics='normal'):
+                   tau_z_pre=0.050, tau_a=0.150, memory=True, recall_dynamics='normala'):
     
     # Probably should be changed 
     tau_z_pre = tau_z_pre
@@ -236,7 +236,7 @@ def serial_wrapper(trials, hypercolumns, minicolumns, number_of_sequences, seque
     
     tau_z_fast = tau_z_pre
     tau_z_slow = 1.0
-    #recall_dynamics = 'normal'  #('normal', 'one_trace')
+    #recall_dynamics = 'normal'  #('normala', 'one_tracea')
 
     T_cue = tau_s
     T_recall = 0.050 * (sequence_length - 1) + 0.075
@@ -411,11 +411,11 @@ def update_continuous(dt, tau_s, tau_a, g_a, w, beta, g_I, I, s, o, a, z_slow, z
                       hypercolumns, minicolumns, recall_dynamics, tau_z_fast):
     
     # Calculate currents
-    if recall_dynamics == 'normal':
+    if recall_dynamics[:-1] == 'normal':
         i = w @ o / hypercolumns
-    if recall_dynamics == 'one_trace':
+    if recall_dynamics[:-1] == 'one_trace':
         i = w @ z_fast / hypercolumns
-    if recall_dynamics == 'two_traces':
+    if recall_dynamics[:-1] == 'two_traces':
         i = (w @ z_fast + w @ z_slow) / hypercolumns
     
     s += (dt / tau_s)  * (i  # Current
@@ -430,7 +430,11 @@ def update_continuous(dt, tau_s, tau_a, g_a, w, beta, g_I, I, s, o, a, z_slow, z
         o = softmax(s, G=G, minicolumns=minicolumns)
 
     # Update the adaptation
-    a += (dt / tau_a) * (o - a)
+    if recall_dynamics[-1] == 'a':
+        a += (dt / tau_a) * (o - a)
+    else:
+        a+=(dt / tau_a) * (o - a) * o + (dt / tau_s) * (o - a)*(1 - o)
+   
     
     # Update z variables
     if recall_dynamics == 'one_trace':
