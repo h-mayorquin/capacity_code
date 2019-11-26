@@ -439,9 +439,9 @@ def update_continuous(dt, tau_s, tau_a, g_a, w, w_slow, beta, beta_slow, g_I, I,
    
     
     # Update z variables
-    if recall_dynamics == 'one_trace':
+    if recall_dynamics[:-1] == 'one_trace':
         z_fast += (dt / tau_z_fast) * (o - z_fast)
-    if recall_dynamics == 'two_traces':
+    if recall_dynamics[:-1] == 'two_traces':
         z_fast += (dt / tau_z_fast) * (o - z_fast)
         z_slow += (dt / tau_z_slow) * (o - z_slow)
 

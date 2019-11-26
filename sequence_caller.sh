@@ -15,7 +15,7 @@ hypercolumns=10
 minicolumns=10
 tau_z_pre=0.050
 tau_a=0.150
-recall_dynamics="normal"
+recall_dynamics="normala"
 
 output="./data_h${hypercolumns}_m${minicolumns}_sl${sequence_length}_z${tau_z_pre}_${recall_dynamics}.pickle"
 
