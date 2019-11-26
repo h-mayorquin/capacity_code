@@ -30,6 +30,7 @@ total_trials = int(sys.argv[8])
 tau_z_slow = 0.005
 memory=True
 trials_per_rank = ceil(total_trials / size)
+total_trials = trials_per_rank * size
 transitions_per_sequence = sequence_length - 1
 number_of_sequences = ceil(number_of_transitions / transitions_per_sequence)
 
