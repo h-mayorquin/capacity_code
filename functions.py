@@ -390,7 +390,7 @@ def run_network_recall(sequence_cue, T_cue, T_recall, dt, w, w_slow, beta, beta_
     for i in range(nt_cue):
         # Step ahead
         o, s, a, z_slow, z_fast = update_continuous(dt, tau_s, tau_a, g_a, w, w_slow, beta, beta_slow, g_I, I_cue, s, o, a, z_slow, z_fast, 
-                                                    hypercolumns, minicolumns, recall_dynamics, tau_z_fast)
+                                                    hypercolumns, minicolumns, recall_dynamics, tau_z_fast, tau_z_slow)
         # Calculate winner
         winner = calculate_step_winner(o, patterns_dic)
         # Store winners
@@ -400,7 +400,7 @@ def run_network_recall(sequence_cue, T_cue, T_recall, dt, w, w_slow, beta, beta_
     for i in range(nt_recall):
         # Step ahead
         o, s, a, z_slow, z_fast = update_continuous(dt, tau_s, tau_a, g_a, w, w_slow, beta, beta_slow, g_I, I_cue, s, o, a, z_slow, z_fast, 
-                                                    hypercolumns, minicolumns, recall_dynamics, tau_z_fast)
+                                                    hypercolumns, minicolumns, recall_dynamics, tau_z_fast, tau_z_slow)
         # Calculate winner
         winner = calculate_step_winner(o, patterns_dic)
         # Store winners
@@ -410,7 +410,7 @@ def run_network_recall(sequence_cue, T_cue, T_recall, dt, w, w_slow, beta, beta_
 
 
 def update_continuous(dt, tau_s, tau_a, g_a, w, w_slow, beta, beta_slow, g_I, I, s, o, a, z_slow, z_fast,
-                      hypercolumns, minicolumns, recall_dynamics, tau_z_fast):
+                      hypercolumns, minicolumns, recall_dynamics, tau_z_fast, tau_z_slow):
     
     # Calculate currents
     if recall_dynamics[:-1] == 'normal':
