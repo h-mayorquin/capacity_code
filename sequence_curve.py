@@ -24,9 +24,9 @@ minicolumns = int(sys.argv[2])
 sequence_length = int(sys.argv[3])
 tau_z_pre = float(sys.argv[4])
 tau_a = float(sys.argv[5])
-T_start=float(sys.argv[5])
-T_per_pattern=float(sys.argv[6])
-recall_dynamics = sys.argv[7]
+T_start=float(sys.argv[6])
+T_per_pattern=float(sys.argv[7])
+recall_dynamics = sys.argv[8]
 tau_z_slow = 0.005
 memory=True
 total_trials = 100
@@ -67,6 +67,6 @@ if rank == 0:
                'hypercolumns': hypercolumns, 'minicolumns': minicolumns, 'number_of_sequences':number_of_sequences_vector, 
                 'sequence_length': sequence_length, 'trials':total_trials, 'tau_z_pre':tau_z_pre, 'tau_a':tau_a, 'memory':memory, 'recall_dynamics':recall_dynamics}
     
-    filename = sys.argv[8]
+    filename = sys.argv[9]
     with open(filename, 'wb') as handle:
         pickle.dump(save_dic, handle, protocol=pickle.HIGHEST_PROTOCOL)
