@@ -19,7 +19,7 @@ T_start=0.050
 T_per_sequence=0.050
 recall_dynamics="normala"
 
-output="./data_h${hypercolumns}_m${minicolumns}_sl${sequence_length}_z${tau_z_pre}_${recall_dynamics}.pickle"
+output="./data_h${hypercolumns}_m${minicolumns}_sl${sequence_length}_z${tau_z_pre}_a${tau_a}_${recall_dynamics}.pickle"
 
 module load mpi4py/3.0.2/py37
 #aprun -n 128 -N 32 python ./mpi_test.py > my_output_file.txt
