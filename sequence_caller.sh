@@ -15,7 +15,7 @@ minicolumns=10
 sequence_length=4
 tau_z_pre=0.050
 tau_a=0.150
-T_start=0.050
+T_start=0.075
 T_per_sequence=0.050
 recall_dynamics="normala"
 
