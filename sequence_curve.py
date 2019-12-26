@@ -4,7 +4,6 @@ import pickle
 import itertools
 import sys
 
-
 import numpy as np
 import random
 from math import ceil, floor

@@ -8,21 +8,8 @@ import multiprocessing as mp
 
 from network import Protocol, NetworkManager, Network
 from patterns_representation import PatternsRepresentation, build_network_representation
-from analysis_functions import calculate_persistence_time, calculate_recall_quantities, calculate_triad_connectivity
-from plotting_functions import plot_weight_matrix, plot_network_activity_angle, plot_persistent_matrix
-from analysis_functions import calculate_angle_from_history, calculate_winning_pattern_from_distances, calculate_patterns_timings
 from connectivity_functions import get_w_pre_post, get_beta, strict_max
 
-
-def calculate_P_self(T1, tau_z_pre, tau_z_post):
-    tau_p = (tau_z_pre * tau_z_post) / (tau_z_pre + tau_z_post)
-    M1_pre = 1 - np.exp(-T1 / tau_z_pre)
-    M1_post = 1 - np.exp(-T1 / tau_z_post)
-    M1_p = 1 - np.exp(-T1 / tau_p)
-    tau_p = (tau_z_pre * tau_z_post) / (tau_z_pre + tau_z_post)
-    
-    P_self = T1 - tau_z_pre * M1_pre - tau_z_post * M1_post + tau_p * M1_p + tau_p * M1_pre * M1_post 
-    return P_self 
 
 def calculate_P_next(T1, T2, tau_z_pre, tau_z_post, Ts):
     tau_p = (tau_z_pre * tau_z_post) / (tau_z_pre + tau_z_post)
@@ -38,23 +25,90 @@ def calculate_P_next(T1, T2, tau_z_pre, tau_z_post, Ts):
     return P_next
 
 def calculate_P_self_repeat(T1, tau_z_pre, tau_z_post, last_seen, Ts=0, memory=True):
+    
+    # Constants
     tau_p = (tau_z_pre * tau_z_post) / (tau_z_pre + tau_z_post)
     M1_pre = 1 - np.exp(-T1 / tau_z_pre)
     M1_post = 1 - np.exp(-T1 / tau_z_post)
     M1_p = 1 - np.exp(-T1 / tau_p)
-    tau_p = (tau_z_pre * tau_z_post) / (tau_z_pre + tau_z_post)
     
-    m = M1_pre * np.exp(-(T1 + Ts) * last_seen / tau_z_pre)
-    n = M1_post * np.exp(-(T1 + Ts) * last_seen / tau_z_post)
-    
-    P_self = T1 - tau_z_pre * (1 - m) * M1_pre - tau_z_post * (1 - n) * M1_post 
-    P_self += tau_p * (1 - m) * (1 - n) * M1_p 
     if memory:
-        P_self += tau_p * M1_pre * M1_post * (1 - np.exp(-T1 * last_seen / tau_p)) 
+        m = M1_pre * np.exp(-(T1 + Ts) * last_seen / tau_z_pre)
+        n = M1_post * np.exp(-(T1 + Ts) * last_seen / tau_z_post)
+        r = (1 - np.exp(-T1 * last_seen / tau_p))
+        
+        P_self = T1 - tau_z_pre * (1 - m) * M1_pre - tau_z_post * (1 - n) * M1_post 
+        P_self += tau_p * (1 - m) * (1 - n) * M1_p 
+        P_self += tau_p * M1_pre * M1_post  * r
     else:
-        P_self += tau_p * M1_pre * M1_post 
+        m = M1_pre * 0
+        n = M1_post * 0
+        r = 1 - 0
+
+        P_self = T1 - tau_z_pre * (1 - m) * M1_pre - tau_z_post * (1 - n) * M1_post 
+        P_self += tau_p * (1 - m) * (1 - n) * M1_p         
+        P_self += tau_p * M1_pre * M1_post * r
     return P_self 
 
+def build_P(patterns, hypercolumns, minicolumns, tau_z_pre, tau_z_post, Tp, Ts, lower_bound=1e-6, verbose=False, memory=True):
+    if verbose:
+        print('Number of patterns you see before', number)
+
+    if memory:
+        buffer_size = int(np.ceil(-np.log(lower_bound) * (tau_z_pre / Tp))) 
+    else:
+        buffer_size = 1
+    
+    P = np.zeros((minicolumns * hypercolumns, minicolumns * hypercolumns))
+    buffer = deque([], buffer_size)  # Holds up to three numbers
+    last_seen_vector = np.zeros(minicolumns * hypercolumns)
+    running_index = 0
+
+    patterns_copy = list(patterns)[::-1]
+    patterns_copy = list(patterns)
+    while(len(patterns_copy) > 0):
+        pattern = patterns_copy.pop()
+ 
+        if verbose:
+            print(patterns_copy)
+            print(buffer)
+            print('pattern', pattern)
+            print('-----------')
+            
+        # Update the self patterns
+        pattern_in_coordinates = [x  +  hypercolumn * minicolumns for (hypercolumn, x) in enumerate(pattern)]
+        coordinate_pairs = [(x, y) for x in pattern_in_coordinates for y in pattern_in_coordinates] 
+        
+        for from_pattern, to_pattern in coordinate_pairs:
+            last_seen = last_seen_vector[from_pattern]
+
+            if last_seen == running_index:
+                last_seen  = 1e10
+                
+            P[from_pattern, to_pattern] += calculate_P_self_repeat(Tp, tau_z_pre, tau_z_post,
+                                                                   last_seen, memory=memory)
+        
+        # Store the patterns that you just saw
+        for element in pattern_in_coordinates:
+            last_seen_vector[element] = 0 
+
+        # Update the next patterns
+        for index, past_pattern in enumerate(buffer):
+            P_next = calculate_P_next(Tp, Tp, tau_z_pre, tau_z_post, Ts)
+            P_next_reverse = calculate_P_next(Tp, Tp, tau_z_post, tau_z_pre, Ts)
+
+            for hypercolumn_present, present_element in enumerate(pattern):
+                for hypercolumn_past, past_element in enumerate(past_pattern):
+                    from_pattern = past_element + hypercolumn_past * minicolumns
+                    to_pattern = present_element + hypercolumn_present * minicolumns
+                    P[from_pattern,  to_pattern] += P_next * np.exp(-index * Tp/tau_z_pre)
+                    P[to_pattern, from_pattern] += P_next_reverse * np.exp(-index * Tp/tau_z_post)
+
+        buffer.appendleft(pattern)
+        running_index += 1
+        last_seen_vector += 1.0
+
+    return P
 
 def generate_sequence_one_hypercolum(m, N):
 
@@ -79,65 +133,6 @@ def generate_sequence(h, m, N):
         sequences.append(generate_sequence_one_hypercolum(m, N))
     return np.array(sequences).T
 
-
-def build_P(patterns, hypercolumns, minicolumns, tau_z_pre, tau_z_post, Tp, Ts, lower_bound=1e-6, verbose=False, memory=True):
-    if verbose:
-        print('Number of patterns you see before', number)
-
-    if memory:
-        buffer_size = int(np.ceil(-np.log(lower_bound) * (tau_z_pre / Tp))) 
-    else:
-        buffer_size = 1
-    
-    P = np.zeros((minicolumns * hypercolumns, minicolumns * hypercolumns))
-    buffer = deque([], buffer_size)  # Holds up to three numbers
-    last_seen_vector = np.zeros(minicolumns * hypercolumns)
-    running_index = 0
-
-    patterns_copy = list(patterns)[::-1]
-    patterns_copy = list(patterns)
-    while(len(patterns_copy) > 0):
-        pattern = patterns_copy.pop()
-        last_seen_vector += 1.0
-
-        if verbose:
-            print(patterns_copy)
-            print(buffer)
-            print('pattern', pattern)
-            print('-----------')
-            
-        # Update the self patterns
-        pattern_in_coordinates = [x  +  hypercolumn * minicolumns for (hypercolumn, x) in enumerate(pattern)]
-        coordinate_pairs = [(x, y) for x in pattern_in_coordinates for y in pattern_in_coordinates] 
-        for from_pattern, to_pattern in coordinate_pairs:
-            last_seen = last_seen_vector[from_pattern]
-
-            if last_seen == running_index:
-                last_seen  = 1e10
-                
-            P[from_pattern, to_pattern] += calculate_P_self_repeat(Tp, tau_z_pre, tau_z_post, last_seen, memory=memory)
-        
-        # Store the patterns that you just saw
-        for element in pattern_in_coordinates:
-            last_seen_vector[element] = 0 
-
-        # Update the next patterns
-        for index, past_pattern in enumerate(buffer):
-            P_next = calculate_P_next(Tp, Tp, tau_z_pre, tau_z_post, Ts)
-            P_next_reverse = calculate_P_next(Tp, Tp, tau_z_post, tau_z_pre, Ts)
-
-            for hypercolumn_present, present_element in enumerate(pattern):
-                for hypercolumn_past, past_element in enumerate(past_pattern):
-                    from_pattern = past_element + hypercolumn_past * minicolumns
-                    to_pattern = present_element + hypercolumn_present * minicolumns
-                    P[from_pattern,  to_pattern] += P_next * np.exp(-index * Tp/tau_z_pre)
-                    P[to_pattern, from_pattern] += P_next_reverse * np.exp(-index * Tp/tau_z_pre)
-
-        buffer.appendleft(pattern)
-        running_index += 1
-        
-    return P
-
 def calculate_probabililties(patterns, minicolumns):
     hypercolumns = patterns.shape[1]
     n_patterns = patterns.shape[0]
@@ -152,14 +147,6 @@ def calculate_probabililties(patterns, minicolumns):
 
 
 
-##########################################################
-###########################################################3
-# Simulations functions
-##########################################################
-##########################################################
-
-
-
 def activity_to_neural_pattern(pattern, minicolumns):
     network_representation = np.zeros(len(pattern) * minicolumns)
     for hypercolumn_index, minicolumn_index in enumerate(pattern):
@@ -170,8 +157,6 @@ def activity_to_neural_pattern(pattern, minicolumns):
 
 def neural_pattern_to_activity(neural_pattern, minicolumns):
     return [x % minicolumns for x in np.where(neural_pattern == 1)[0]]
-
-
 
 
 def build_dictionary_of_patterns(patterns_to_train, minicolumns):
@@ -217,9 +202,17 @@ def calculate_patterns_timings(winning_patterns, dt, remove=0):
     return patterns_timings
 
 
+##########################################################
+###########################################################3
+# Simulations functions
+##########################################################
+##########################################################
+
 
 def serial_wrapper(trials, hypercolumns, minicolumns, number_of_sequences, sequence_length, pattern_seed,
-                   tau_z_pre=0.050, tau_z_slow=0.005, tau_a=0.150, memory=True, recall_dynamics='normala', T_start=0.75, T_per_pattern=0.055):
+                   tau_z_pre=0.050, sigma=0.0, tau_z_slow=0.005, tau_a=0.150, g_a=2.0, memory=True, 
+                   recall_dynamics='normala', T_start=0.75, T_per_pattern=0.055, 
+                   patterns_to_train=None):
     
     # Probably should be changed 
     tau_z_pre = tau_z_pre
@@ -231,8 +224,9 @@ def serial_wrapper(trials, hypercolumns, minicolumns, number_of_sequences, seque
     epsilon = 1e-20
     remove = 0.010
     tau_s = 0.010
-    g_a = 2.0
+    g_a = g_a
     tau_a = tau_a
+    sigma_in = sigma * np.sqrt(2 / tau_s)
     
     tau_z_fast = tau_z_pre
     #recall_dynamics = 'normal'  #('normala', 'one_tracea')
@@ -248,8 +242,12 @@ def serial_wrapper(trials, hypercolumns, minicolumns, number_of_sequences, seque
     pair_of_seq_and_recalled = []
 
     for _ in range(trials):
-        aux = run_recall_trial(hypercolumns, minicolumns, number_of_sequences, sequence_length, dt, tau_z_pre, T_cue, T_recall,
-                         tau_z_post, training_time, remove, tau_s, g_a, tau_a, epsilon, memory, recall_dynamics, tau_z_slow, tau_z_fast)
+        aux = run_recall_trial(hypercolumns, minicolumns, number_of_sequences, 
+                               sequence_length, dt, tau_z_pre, T_cue, T_recall, 
+                               tau_z_post, training_time, remove, tau_s, g_a, tau_a, epsilon, 
+                               memory, recall_dynamics, tau_z_slow, tau_z_fast, sigma_in,
+                               patterns_to_train=patterns_to_train)
+        
         correctly_recalled, points_of_failure_trial, persistence_times_trial, pairs = aux 
 
         # Append to lists
@@ -263,15 +261,20 @@ def serial_wrapper(trials, hypercolumns, minicolumns, number_of_sequences, seque
     return number_of_successes, points_of_failure, persistence_times, pair_of_seq_and_recalled
 
 
-def run_recall_trial(hypercolumns, minicolumns, number_of_sequences, sequence_length, dt, tau_z_pre, T_cue, T_recall,
-                     tau_z_post, training_time, remove, tau_s, g_a, tau_a, epsilon, memory, recall_dynamics, tau_z_slow, tau_z_fast):
+def run_recall_trial(hypercolumns, minicolumns, number_of_sequences, sequence_length, dt, 
+                     tau_z_pre, T_cue, T_recall, tau_z_post, training_time, 
+                     remove, tau_s, g_a, tau_a, epsilon, memory, recall_dynamics, tau_z_slow, tau_z_fast, 
+                     sigma_in, patterns_to_train=None):
     
     # Random sequence of patterns
     n_patterns = number_of_sequences * sequence_length
-    patterns_to_train = generate_sequence(hypercolumns, minicolumns, n_patterns)
+    if patterns_to_train is None:
+        patterns_to_train = generate_sequence(hypercolumns, minicolumns, n_patterns)
+    
     # Calculate the weights and biases
     w, beta = create_w_and_beta(patterns_to_train, hypercolumns, minicolumns, number_of_sequences, 
                                 sequence_length, training_time, tau_z_pre, tau_z_post, epsilon, memory=memory)
+    
     
     w_slow, beta_slow = create_w_and_beta(patterns_to_train, hypercolumns, minicolumns, number_of_sequences, 
                                 sequence_length, training_time, tau_z_slow, tau_z_post, epsilon, memory=memory)
@@ -280,14 +283,17 @@ def run_recall_trial(hypercolumns, minicolumns, number_of_sequences, sequence_le
     
     # Calculate the statitsics for the sequences
     aux = calculate_sequences_statistics(patterns_to_train, hypercolumns, minicolumns, number_of_sequences, sequence_length, 
-                                         T_cue, T_recall, dt, w, w_slow, beta, beta_slow, tau_s, tau_a, g_a, patterns_dic, remove, recall_dynamics, tau_z_slow, tau_z_fast)
+                                         T_cue, T_recall, dt, w, w_slow, beta, beta_slow, 
+                                         tau_s, tau_a, g_a, patterns_dic, remove, recall_dynamics, 
+                                         tau_z_slow, tau_z_fast, sigma_in)
     
     correctly_recalled, point_of_failure, persistence_times, seq_and_recalled_pairs = aux
     
     return correctly_recalled, point_of_failure, persistence_times, seq_and_recalled_pairs
 
-def create_w_and_beta(patterns_to_train, hypercolumns, minicolumns, number_of_sequences, sequence_length, training_time, 
-                      tau_z_pre, tau_z_post, epsilon, memory=True):
+def create_w_and_beta(patterns_to_train, hypercolumns, minicolumns,
+                      number_of_sequences, sequence_length, training_time, 
+                      tau_z_pre, tau_z_post, epsilon, memory=True, resting_time=0):
 
     Tp = training_time 
     Ts = 0
@@ -296,17 +302,73 @@ def create_w_and_beta(patterns_to_train, hypercolumns, minicolumns, number_of_se
         sequence = patterns_to_train.reshape((number_of_sequences, sequence_length, hypercolumns))[sequence_index, :]
         P += build_P(sequence, hypercolumns, minicolumns, tau_z_pre, tau_z_post, 
                      Tp, Ts, lower_bound=1e-6, verbose=False, memory=memory)
-
-    value = (Tp ) / (Tp * (number_of_sequences * sequence_length))
+    
+    T_training_total = Tp * number_of_sequences * sequence_length + resting_time
+    value = Tp / T_training_total 
     p = calculate_probabililties(patterns_to_train, minicolumns) * value
+    P /= T_training_total
 
-    w = get_w_pre_post(P, p, p, epsilon, diagonal_zero=False)
-    beta = get_beta(p, epsilon)
+    P[P < epsilon**2] = epsilon ** 2
+    p[p < epsilon] = epsilon
+    
+    
+    w = get_w_pre_post(P, p, p, diagonal_zero=False)
+    beta = get_beta(p)
     
     return w, beta
 
+
+def create_p_and_w(patterns_to_train, hypercolumns, minicolumns, number_of_sequences, sequence_length, training_time, 
+                      tau_z_pre, tau_z_post, epsilon, memory=True, resting_time=0):
+
+    Tp = training_time 
+    Ts = 0
+    P = np.zeros((minicolumns * hypercolumns, minicolumns * hypercolumns))
+    for sequence_index in range(number_of_sequences):
+        sequence = patterns_to_train.reshape((number_of_sequences, sequence_length, hypercolumns))[sequence_index, :]
+        P += build_P(sequence, hypercolumns, minicolumns, tau_z_pre, tau_z_post, 
+                     Tp, Ts, lower_bound=1e-6, verbose=False, memory=memory)
+    
+    T_training_total = Tp * number_of_sequences * sequence_length + resting_time
+    value = Tp  / T_training_total
+    
+    p = calculate_probabililties(patterns_to_train, minicolumns) * value
+    P *= 1.0 / T_training_total
+    P[P < epsilon**2] = epsilon ** 2
+    p[p < epsilon] = epsilon
+    
+    w = get_w_pre_post(P, p, p, diagonal_zero=False)
+    beta = get_beta(p)
+    
+    return w, beta, P, p
+
+
+def get_w_pre_post(P, p_pre, p_post, diagonal_zero=False):
+
+    outer = np.outer(p_post, p_pre)
+    x = P / outer
+
+    # P_qual zero and outer is bigger than epsilon
+    #P_equal_zero = (P < epsilon) * (outer > epsilon)
+    w = np.log(x)
+    #w[P_equal_zero] = np.log10(epsilon)
+
+    if diagonal_zero:
+        w[np.diag_indices_from(w)] = 0
+
+    return w
+
+
+def get_beta(p):
+
+    beta = np.log(p)
+
+    return beta
+
 def calculate_sequences_statistics(patterns_to_train, hypercolumns, minicolumns, number_of_sequences, sequence_length, 
-                                   T_cue, T_recall, dt, w, w_slow, beta, beta_slow, tau_s, tau_a, g_a, patterns_dic, remove, recall_dynamics, tau_z_slow, tau_z_fast):
+                                   T_cue, T_recall, dt, w, w_slow, beta, beta_slow, tau_s, 
+                                   tau_a, g_a, patterns_dic, remove, recall_dynamics, 
+                                   tau_z_slow, tau_z_fast, sigma_in):
     
     correctly_recalled = []
     points_of_failure = []
@@ -319,8 +381,10 @@ def calculate_sequences_statistics(patterns_to_train, hypercolumns, minicolumns,
         sequence = reshaped_patterns[sequence_index, :]
         sequences_to_store.append(sequence)
 
-        aux = calculate_recalled_patterns(sequence, T_cue, T_recall, dt, w, w_slow, beta, beta_slow, tau_s, tau_a, g_a, 
-                                          patterns_dic, hypercolumns, minicolumns, remove, recall_dynamics, tau_z_slow, tau_z_fast)
+        aux = calculate_recalled_patterns(sequence, T_cue, T_recall, dt, w, w_slow, beta, 
+                                          beta_slow, tau_s, tau_a, g_a, 
+                                          patterns_dic, hypercolumns, minicolumns, remove, 
+                                          recall_dynamics, tau_z_slow, tau_z_fast, sigma_in)
 
         recalled_patterns, T_per = aux
         persistence_times.append(T_per)
@@ -340,12 +404,14 @@ def calculate_sequences_statistics(patterns_to_train, hypercolumns, minicolumns,
     
     return correctly_recalled, points_of_failure, persistence_times, (sequences_to_store, recalled_to_store)
 
-def calculate_recalled_patterns(sequence, T_cue, T_recall, dt, w, w_slow, beta, beta_slow, tau_s, tau_a, g_a, patterns_dic, hypercolumns, minicolumns, remove, 
-                                recall_dynamics, tau_z_slow, tau_z_fast):
+def calculate_recalled_patterns(sequence, T_cue, T_recall, dt, w, w_slow, beta, 
+                                beta_slow, tau_s, tau_a, g_a, patterns_dic, hypercolumns, minicolumns, remove, 
+                                recall_dynamics, tau_z_slow, tau_z_fast, sigma_in):
     sequence_cue = sequence[0]
     
-    winners = run_network_recall(sequence_cue, T_cue, T_recall, dt, w, w_slow, beta, beta_slow, tau_s, tau_a, g_a, patterns_dic, hypercolumns, minicolumns, 
-                                 recall_dynamics, tau_z_slow, tau_z_fast)
+    winners = run_network_recall(sequence_cue, T_cue, T_recall, dt, w, 
+                                 w_slow, beta, beta_slow, tau_s, tau_a, g_a, patterns_dic, hypercolumns, minicolumns, 
+                                 recall_dynamics, tau_z_slow, tau_z_fast, sigma_in)
     timings = calculate_patterns_timings(winners, dt, remove=remove)
 
     # Get the list of the recalled patterns
@@ -367,8 +433,9 @@ def calculate_first_point_of_failure(correct_sequence, recalled_sequence, failur
 
     return first_point_of_failure
 
-def run_network_recall(sequence_cue, T_cue, T_recall, dt, w, w_slow, beta, beta_slow, tau_s, tau_a, g_a, patterns_dic, hypercolumns, minicolumns, 
-                       recall_dynamics, tau_z_slow, tau_z_fast):
+def run_network_recall(sequence_cue, T_cue, T_recall, dt, w, w_slow, beta, beta_slow, tau_s,
+                       tau_a, g_a, patterns_dic, hypercolumns, minicolumns, 
+                       recall_dynamics, tau_z_slow, tau_z_fast, sigma_in):
 
     nt_cue = int(T_cue / dt)
     nt_recall = int(T_recall / dt)
@@ -385,12 +452,16 @@ def run_network_recall(sequence_cue, T_cue, T_recall, dt, w, w_slow, beta, beta_
     a = np.full(shape=n_units, fill_value=0.0)
     I = np.full(shape=n_units, fill_value=0.0)
     
-    winners = np.zeros(nt_cue + nt_recall)
+    noise_vector =  sigma_in * np.sqrt(dt) * np.random.normal(0, 1.0, size=(nt_recall, n_units))
+
+    winners = np.zeros(nt_recall + nt_cue)
     g_I = 10.0
     for i in range(nt_cue):
         # Step ahead
-        o, s, a, z_slow, z_fast = update_continuous(dt, tau_s, tau_a, g_a, w, w_slow, beta, beta_slow, g_I, I_cue, s, o, a, z_slow, z_fast, 
-                                                    hypercolumns, minicolumns, recall_dynamics, tau_z_fast, tau_z_slow)
+        noise = 0
+        o, s, a, z_slow, z_fast = update_continuous(dt, tau_s, tau_a, g_a, w, w_slow, beta, beta_slow, 
+                                                    g_I, I_cue, s, o, a, z_slow, z_fast, 
+                                                    hypercolumns, minicolumns, recall_dynamics, tau_z_fast, tau_z_slow, noise)
         # Calculate winner
         winner = calculate_step_winner(o, patterns_dic)
         # Store winners
@@ -399,8 +470,10 @@ def run_network_recall(sequence_cue, T_cue, T_recall, dt, w, w_slow, beta, beta_
     g_I = 0.0
     for i in range(nt_recall):
         # Step ahead
-        o, s, a, z_slow, z_fast = update_continuous(dt, tau_s, tau_a, g_a, w, w_slow, beta, beta_slow, g_I, I_cue, s, o, a, z_slow, z_fast, 
-                                                    hypercolumns, minicolumns, recall_dynamics, tau_z_fast, tau_z_slow)
+        noise = noise_vector[i]
+        o, s, a, z_slow, z_fast = update_continuous(dt, tau_s, tau_a, g_a, w, w_slow, beta, 
+                                                    beta_slow, g_I, I_cue, s, o, a, z_slow, z_fast, 
+                                                    hypercolumns, minicolumns, recall_dynamics, tau_z_fast, tau_z_slow, noise)
         # Calculate winner
         winner = calculate_step_winner(o, patterns_dic)
         # Store winners
@@ -410,21 +483,26 @@ def run_network_recall(sequence_cue, T_cue, T_recall, dt, w, w_slow, beta, beta_
 
 
 def update_continuous(dt, tau_s, tau_a, g_a, w, w_slow, beta, beta_slow, g_I, I, s, o, a, z_slow, z_fast,
-                      hypercolumns, minicolumns, recall_dynamics, tau_z_fast, tau_z_slow):
+                      hypercolumns, minicolumns, recall_dynamics, tau_z_fast, tau_z_slow, noise):
     
     # Calculate currents
+    factor = 1
     if recall_dynamics[:-1] == 'normal':
         i = w @ o / hypercolumns
     if recall_dynamics[:-1] == 'one_trace':
         i = w @ z_fast / hypercolumns
     if recall_dynamics[:-1] == 'two_traces':
-        i = (w @ z_fast + w_slow @ z_slow) / hypercolumns
+        i = (w @ z_fast + w_slow @ z_slow) / (2 * hypercolumns)
+        factor = 2
     
     s += (dt / tau_s)  * (i  # Current
                        + beta  # Bias
                        + g_I * I  # Input current
-                       - g_a * a  # Adaptation
+                       - factor * g_a * a  # Adaptation
                        - s)  # s follow all of the s above
+    # Add noise
+    s += noise
+    
     # Non-linearity
     if True:
         o = strict_max(s, minicolumns=minicolumns)
