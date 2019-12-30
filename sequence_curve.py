@@ -22,19 +22,28 @@ hypercolumns = int(sys.argv[1])
 minicolumns = int(sys.argv[2])
 sequence_length = int(sys.argv[3])
 tau_z_pre = float(sys.argv[4])
-tau_a = float(sys.argv[5])
-T_start=float(sys.argv[6])
-T_per_pattern=float(sys.argv[7])
-recall_dynamics = sys.argv[8]
-tau_z_slow = 0.005
+sigma = float(sys.argv[5])
+tau_a = float(sys.argv[6])
+g_a = float(sys.argv[7])
+T_start=float(sys.argv[8])
+T_per_pattern=float(sys.argv[9])
+recall_dynamics = sys.argv[10]
+
 memory=True
+
+tau_z_slow = 0.005
+
+
 total_trials = 100
+max_transitions = 100
+
 trials_per_rank = ceil(total_trials / size)
 total_trials = trials_per_rank * size
-max_transitions = 100
 transitions_per_sequence = sequence_length - 1
 max_ns = floor(max_transitions / transitions_per_sequence)
 number_of_sequences_vector = np.arange(2, max_ns , 1)
+
+
 
 if rank == 0:
     storage_dic_success = {}
@@ -46,7 +55,7 @@ pattern_seed = rank
 for ns in number_of_sequences_vector:
     
     aux = serial_wrapper(trials_per_rank, hypercolumns, minicolumns, ns, sequence_length, pattern_seed, tau_z_pre, 
-                         tau_z_slow, tau_a, memory, recall_dynamics, T_start, T_per_pattern)
+                         sigma, tau_z_slow, tau_a, g_a, memory, recall_dynamics, T_start, T_per_pattern)
     successes, points_of_failure, persistence_times, seq_recalled_pairs = aux
     
     aux_success = comm.gather(successes, root=0)
@@ -63,9 +72,9 @@ for ns in number_of_sequences_vector:
 # Store data as a pickle
 if rank == 0:
     save_dic = {'success': storage_dic_success, 'points_of_failure':storage_dic_points_of_failure, 'persistent_times':storage_dic_persistent_times, 
-               'hypercolumns': hypercolumns, 'minicolumns': minicolumns, 'number_of_sequences':number_of_sequences_vector, 
+               'hypercolumns': hypercolumns, 'minicolumns': minicolumns, 'number_of_sequences':number_of_sequences_vector, 'sigma':sigma, 'g_a':g_a,
                 'sequence_length': sequence_length, 'trials':total_trials, 'tau_z_pre':tau_z_pre, 'tau_a':tau_a, 'memory':memory, 'recall_dynamics':recall_dynamics}
     
-    filename = sys.argv[9]
+    filename = sys.argv[11]
     with open(filename, 'wb') as handle:
         pickle.dump(save_dic, handle, protocol=pickle.HIGHEST_PROTOCOL)
