@@ -6,10 +6,82 @@ from math import ceil, floor
 from copy import deepcopy
 import multiprocessing as mp
 
-from network import Protocol, NetworkManager, Network
 from patterns_representation import PatternsRepresentation, build_network_representation
-from connectivity_functions import get_w_pre_post, get_beta, strict_max
 
+
+def get_beta(p, epsilon=1e-10):
+
+    beta = np.log(p)
+
+    return beta
+
+
+def softmax(input_vector, G=1.0, minicolumns=2):
+    """Calculate the softmax of a list of numbers w.
+
+    Parameters
+    ----------
+    input_vector : the vector to softmax
+    G : the constant for softmax, the bigger the G the more of a max it is
+
+    Return
+    ------
+    a list of the same length as input_vectorof non-negative numbers
+
+    Examples
+    --------
+    """
+
+    # The lower bounds keeps the overflow from happening
+    lower_bound = -600
+    upper_bound = 600
+
+    x = np.copy(input_vector)
+    x_size = x.size
+    x = np.reshape(x, (x_size // minicolumns, minicolumns))
+    x = G * np.array(x)
+
+    x[x < lower_bound] = lower_bound
+    x[x > upper_bound] = upper_bound
+
+    e = np.exp(x)
+    dist = normalize_array(e)
+
+    dist = np.reshape(dist, x_size)
+
+    return dist
+
+
+def normalize_array(array):
+    """
+    "Normalize an array over the second axis"
+
+    :param array: the array to normalize
+    :return: the normalized array
+    """
+
+    return array / np.sum(array, axis=1)[:, np.newaxis]
+
+
+def strict_max(x, minicolumns):
+    """
+    A strict max that returns an array with 1 where the maximum of every minicolumn is
+    :param x: the array
+    :param minicolumns: number of minicolumns
+    :return: the stric_max of the array
+    """
+
+    x = np.reshape(x, (x.size // minicolumns, minicolumns))
+    z = np.zeros_like(x)
+    maxes = np.argmax(x, axis=1)
+    for max_index, max_aux in enumerate(maxes):
+        z[max_index, max_aux] = 1
+
+    return z.reshape(x.size)
+
+##############
+# Build P
+################
 
 def calculate_P_next(T1, T2, tau_z_pre, tau_z_post, Ts):
     tau_p = (tau_z_pre * tau_z_post) / (tau_z_pre + tau_z_post)

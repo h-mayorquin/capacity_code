@@ -1,6 +1,6 @@
 #!/bin/bash -l
 
-#SBATCH -A 2018-3-582
+#SBATCH -A 2019-3-58
 #SBATCH -t 01:00:00
 #SBATCH -J sequence
 
