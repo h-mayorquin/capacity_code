@@ -19,7 +19,8 @@ tau_a=0.150
 g_a=3.0
 T_start=0.080
 T_per_sequence=0.080
-recall_dynamics="normala"
+recall_dynamics="normalma"
+#recall_dynamics="normalno" 
 
 output="./data_h${hypercolumns}_m${minicolumns}_sl${sequence_length}_z${tau_z_pre}_sigma${sigma}_a${tau_a}_ga${g_a}_${recall_dynamics}.pickle"
 
