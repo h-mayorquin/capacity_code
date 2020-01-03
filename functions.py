@@ -378,7 +378,7 @@ def create_w_and_beta(patterns_to_train, hypercolumns, minicolumns,
     T_training_total = Tp * number_of_sequences * sequence_length + resting_time
     value = Tp / T_training_total 
     p = calculate_probabililties(patterns_to_train, minicolumns) * value
-    P /= T_training_total
+    #P /= T_training_total
 
     P[P < epsilon**2] = epsilon ** 2
     p[p < epsilon] = epsilon
