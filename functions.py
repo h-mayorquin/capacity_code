@@ -559,11 +559,11 @@ def update_continuous(dt, tau_s, tau_a, g_a, w, w_slow, beta, beta_slow, g_I, I,
     
     # Calculate currents
     factor = 1
-    if recall_dynamics[:-1] == 'normal':
+    if recall_dynamics[:-2] == 'normal':
         i = w @ o / hypercolumns
-    if recall_dynamics[:-1] == 'one_trace':
+    if recall_dynamics[:-2] == 'one_trace':
         i = w @ z_fast / hypercolumns
-    if recall_dynamics[:-1] == 'two_traces':
+    if recall_dynamics[:-2] == 'two_traces':
         i = (w @ z_fast + w_slow @ z_slow) / (2 * hypercolumns)
         factor = 2
     
@@ -589,9 +589,9 @@ def update_continuous(dt, tau_s, tau_a, g_a, w, w_slow, beta, beta_slow, g_I, I,
    
     
     # Update z variables
-    if recall_dynamics[:-1] == 'one_trace':
+    if recall_dynamics[:-2] == 'one_trace':
         z_fast += (dt / tau_z_fast) * (o - z_fast)
-    if recall_dynamics[:-1] == 'two_traces':
+    if recall_dynamics[:-2] == 'two_traces':
         z_fast += (dt / tau_z_fast) * (o - z_fast)
         z_slow += (dt / tau_z_slow) * (o - z_slow)
 

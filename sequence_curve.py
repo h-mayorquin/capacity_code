@@ -29,10 +29,10 @@ T_start=float(sys.argv[8])
 T_per_pattern=float(sys.argv[9])
 recall_dynamics = sys.argv[10]
 
-if recall_dyanmics[-1] = 'o':
-    memory=False
+if recall_dyanmics[-2] == 'm':
+    memory = True
 else:
-    memory=True
+    memory = False
 
 tau_z_slow = 0.005
 
