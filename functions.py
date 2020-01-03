@@ -9,7 +9,7 @@ import multiprocessing as mp
 from patterns_representation import PatternsRepresentation, build_network_representation
 
 
-def get_beta(p, epsilon=1e-10):
+def get_beta(p):
 
     beta = np.log(p)
 
@@ -384,7 +384,7 @@ def create_w_and_beta(patterns_to_train, hypercolumns, minicolumns,
     p[p < epsilon] = epsilon
     
     
-    w = get_w_pre_post(P, p, p, diagonal_zero=False)
+    w = get_w_pre_post(P, p, p)
     beta = get_beta(p)
     
     return w, beta
