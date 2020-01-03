@@ -303,7 +303,7 @@ def serial_wrapper(trials, hypercolumns, minicolumns, number_of_sequences, seque
     tau_z_fast = tau_z_pre
     #recall_dynamics = 'normal'  #('normala', 'one_tracea')
     
-    T_training_total = Tp * number_of_sequences * sequence_length
+    T_training_total = training_time * number_of_sequences * sequence_length
     epsilon = dt/(T_training_total + dt)
 
     T_cue = tau_s

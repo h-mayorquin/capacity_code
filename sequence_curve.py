@@ -29,7 +29,7 @@ T_start=float(sys.argv[8])
 T_per_pattern=float(sys.argv[9])
 recall_dynamics = sys.argv[10]
 
-if recall_dyanmics[-2] == 'm':
+if recall_dynamics[-2] == 'm':
     memory = True
 else:
     memory = False
