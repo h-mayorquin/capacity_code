@@ -415,7 +415,7 @@ def create_p_and_w(patterns_to_train, hypercolumns, minicolumns, number_of_seque
     return w, beta, P, p
 
 
-def get_w_pre_post(P, p_pre, p_post, diagonal_zero=False):
+def get_w_pre_post(P, p_pre, p_post):
 
     outer = np.outer(p_post, p_pre)
     x = P / outer
@@ -424,9 +424,6 @@ def get_w_pre_post(P, p_pre, p_post, diagonal_zero=False):
     #P_equal_zero = (P < epsilon) * (outer > epsilon)
     w = np.log(x)
     #w[P_equal_zero] = np.log10(epsilon)
-
-    if diagonal_zero:
-        w[np.diag_indices_from(w)] = 0
 
     return w
 
