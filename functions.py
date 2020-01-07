@@ -293,7 +293,6 @@ def serial_wrapper(trials, hypercolumns, minicolumns, number_of_sequences, seque
     # Trial parameters (change not very often)
     tau_z_post = 0.005
     training_time = 0.100
-    epsilon = 1e-20
     remove = 0.010
     tau_s = 0.010
     g_a = g_a
