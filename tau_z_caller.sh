@@ -26,4 +26,4 @@ output="../databases/tau_z_h${hypercolumns}_m${minicolumns}_sl${sequence_length}
 
 module load mpi4py/3.0.2/py37
 #aprun -n 128 -N 32 python ./mpi_test.py > my_output_file.txt
-srun -n 128 python ./tau_z_curve $hypercolumns $minicolumns $sequence_length $transitions $sigma $tau_a $g_a $T_start $T_per_sequence $recall_dynamics $output
+srun -n 128 python ./tau_z_curve.py $hypercolumns $minicolumns $sequence_length $transitions $sigma $tau_a $g_a $T_start $T_per_sequence $recall_dynamics $output
