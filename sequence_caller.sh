@@ -16,9 +16,9 @@ sequence_length=4
 tau_z_pre=0.025
 sigma=0
 tau_a=0.150
-g_a=3.0
-T_start=0.080
-T_per_sequence=0.080
+g_a=4.0
+T_start=0.100
+T_per_sequence=0.100
 recall_dynamics="normalma"
 #recall_dynamics="normalno" 
 

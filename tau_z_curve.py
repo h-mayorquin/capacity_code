@@ -65,16 +65,17 @@ for tau_z_pre in tau_z_vector:
     aux_pairs = comm.gather(seq_recalled_pairs, root=0)
     
     if rank == 0:
-        storage_dic_success[ns] = sum(aux_success, [])
-        storage_dic_points_of_failure[ns] = sum(aux_failure, [])
-        storage_dic_persistent_times[ns] = sum(aux_times, [])
-        storage_dic_pairs[ns] = sum(aux_pairs, [])
+        storage_dic_success[tau_z_pre] = sum(aux_success, [])
+        storage_dic_points_of_failure[tau_z_pre] = sum(aux_failure, [])
+        storage_dic_persistent_times[tau_z_pre] = sum(aux_times, [])
+        storage_dic_pairs[tau_z_pre] = sum(aux_pairs, [])
         
 # Store data as a pickle
 if rank == 0:
     save_dic = {'success': storage_dic_success, 'points_of_failure':storage_dic_points_of_failure, 'persistent_times':storage_dic_persistent_times, 
                'hypercolumns': hypercolumns, 'minicolumns': minicolumns, 'number_of_sequences':ns, 'sigma':sigma, 'g_a':g_a,
-                'sequence_length': sequence_length, 'trials':total_trials, 'tau_z_pre':tau_z_vector, 'tau_a':tau_a, 'memory':memory, 'recall_dynamics':recall_dynamics}
+                'sequence_length': sequence_length, 'trials':total_trials, 'tau_z_pre_vector':tau_z_vector, 
+                'tau_a':tau_a, 'memory':memory, 'recall_dynamics':recall_dynamics}
     
     filename = sys.argv[11]
     with open(filename, 'wb') as handle:
