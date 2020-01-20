@@ -59,7 +59,7 @@ pattern_seed = rank
 for ns in number_of_sequences_vector:
     
     aux = serial_wrapper(trials_per_rank, hypercolumns, minicolumns, ns, sequence_length, pattern_seed, tau_z_pre, 
-                         sigma, tau_z_slow, tau_a, g_a, memory, recall_dynamics, T_start, T_per_pattern)
+                         sigma, tau_z_slow, tau_a, g_a, memory, recall_dynamics, T_start, T_per_pattern, remove=remove)
     successes, points_of_failure, persistence_times, seq_recalled_pairs = aux
     
     aux_success = comm.gather(successes, root=0)

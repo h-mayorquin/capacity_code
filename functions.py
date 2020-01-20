@@ -243,7 +243,7 @@ def build_dictionary_of_patterns(patterns_to_train, minicolumns):
 
 
 
-def calculate_patterns_timings(winning_patterns, dt, remove=0):
+def calculate_patterns_timings(winning_patterns, dt, remove=0.010):
     """
 
     :param winning_patterns: A vector with the winning pattern for each point in time
@@ -596,12 +596,22 @@ def update_continuous(dt, tau_s, tau_a, g_a, w, w_slow, beta, beta_slow, g_I, I,
 
     return o, s, a, z_slow, z_fast
 
+def hamming_sim(pattern1, pattern2):
+    return np.sum(pattern1 == pattern2) 
+
 def calculate_step_winner(o, patterns_dic):
+    dis = [hamming_sim(o, patterns_dic[pattern_index]) for pattern_index in patterns_dic.keys()]
+
+    return np.argmax(dis)
+
+def calculate_step_winner_backup(o, patterns_dic):
     nominator = [np.dot(o, patterns_dic[pattern_index]) for pattern_index in patterns_dic.keys()]
     denominator = [np.linalg.norm(o) * np.linalg.norm(patterns_dic[pattern_index]) for pattern_index in patterns_dic.keys()]
     dis = [a / b for (a, b) in zip(nominator, denominator)]
     
     return np.argmax(dis)
+
+
 
 #################################
 # Root finding functions
