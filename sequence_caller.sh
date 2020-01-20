@@ -20,10 +20,11 @@ g_a=4.0
 T_start=0.100
 T_per_sequence=0.100
 recall_dynamics="normalma"
-#recall_dynamics="normalno" 
+#recall_dynamics="normalno"
+remove=0.010
 
-output="../databases/data_h${hypercolumns}_m${minicolumns}_sl${sequence_length}_z${tau_z_pre}_sigma${sigma}_a${tau_a}_ga${g_a}_${recall_dynamics}.pickle"
+output="../databases/data_h${hypercolumns}_m${minicolumns}_sl${sequence_length}_z${tau_z_pre}_sigma${sigma}_a${tau_a}_ga${g_a}_Tmin${remove}_${recall_dynamics}.pickle"
 
 module load mpi4py/3.0.2/py37
 #aprun -n 128 -N 32 python ./mpi_test.py > my_output_file.txt
-srun -n 128 python ./sequence_curve.py $hypercolumns $minicolumns $sequence_length $tau_z_pre $sigma $tau_a $g_a $T_start $T_per_sequence $recall_dynamics $output
+srun -n 128 python ./sequence_curve.py $hypercolumns $minicolumns $sequence_length $tau_z_pre $sigma $tau_a $g_a $T_start $T_per_sequence $remove $recall_dynamics $output

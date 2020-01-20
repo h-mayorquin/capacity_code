@@ -283,7 +283,7 @@ def calculate_patterns_timings(winning_patterns, dt, remove=0):
 
 def serial_wrapper(trials, hypercolumns, minicolumns, number_of_sequences, sequence_length, pattern_seed,
                    tau_z_pre=0.050, sigma=0.0, tau_z_slow=0.005, tau_a=0.150, g_a=2.0, memory=True, 
-                   recall_dynamics='normala', T_start=0.75, T_per_pattern=0.055, 
+                   recall_dynamics='normala', T_start=0.75, T_per_pattern=0.055, remove=0.010,
                    patterns_to_train=None):
     
     # Probably should be changed 
@@ -293,7 +293,7 @@ def serial_wrapper(trials, hypercolumns, minicolumns, number_of_sequences, seque
     # Trial parameters (change not very often)
     tau_z_post = 0.005
     training_time = 0.100
-    remove = 0.010
+    remove = remove
     tau_s = 0.010
     g_a = g_a
     tau_a = tau_a

@@ -27,7 +27,8 @@ tau_a = float(sys.argv[6])
 g_a = float(sys.argv[7])
 T_start=float(sys.argv[8])
 T_per_pattern=float(sys.argv[9])
-recall_dynamics = sys.argv[10]
+remove = float(sys.argv[10])
+recall_dynamics = sys.argv[11]
 
 if recall_dynamics[-2] == 'm':
     memory = True
@@ -78,6 +79,6 @@ if rank == 0:
                'hypercolumns': hypercolumns, 'minicolumns': minicolumns, 'number_of_sequences':number_of_sequences_vector, 'sigma':sigma, 'g_a':g_a,
                 'sequence_length': sequence_length, 'trials':total_trials, 'tau_z_pre':tau_z_pre, 'tau_a':tau_a, 'memory':memory, 'recall_dynamics':recall_dynamics}
     
-    filename = sys.argv[11]
+    filename = sys.argv[12]
     with open(filename, 'wb') as handle:
         pickle.dump(save_dic, handle, protocol=pickle.HIGHEST_PROTOCOL)
