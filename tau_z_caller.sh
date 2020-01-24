@@ -1,7 +1,7 @@
 #!/bin/bash -l
 
 #SBATCH -A 2019-3-58
-#SBATCH -t 01:00:00
+#SBATCH -t 00:20:00
 #SBATCH -J tau_z
 
 #SBATCH --nodes=4

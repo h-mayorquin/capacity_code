@@ -497,9 +497,9 @@ def run_network_recall(sequence_cue, T_cue, T_recall, dt, w, w_slow, beta, beta_
     
     I_cue = activity_to_neural_pattern(sequence_cue, minicolumns)
     # Create s_star
-    s_star = np.zeros(n_units)
-    for index in range(n_units):
-        s_star[index] = beta[index] + w[index, :] @ I_cue
+    #s_star = np.zeros(n_units)
+    #for index in range(n_units):
+    #    s_star[index] = beta[index] + w[index, :] @ I_cue
     
     o = np.full(shape=n_units, fill_value=0.0)
     s = np.full(shape=n_units, fill_value=0.0)
@@ -512,12 +512,12 @@ def run_network_recall(sequence_cue, T_cue, T_recall, dt, w, w_slow, beta, beta_
     noise_vector =  sigma_in * np.sqrt(dt) * np.random.normal(0, 1.0, size=(nt_recall, n_units))
 
     winners = np.zeros(nt_recall + nt_cue)
-    g_I = 1.0
+    g_I = 0.5
     for i in range(nt_cue):
         # Step ahead
         noise = 0
-        o, s, a, z_slow, z_fast = update_s_cue(dt, tau_s, tau_a, g_a, w, w_slow, beta, beta_slow, 
-                                                    g_I, s_star, s, o, a, z_slow, z_fast, 
+        o, s, a, z_slow, z_fast = update_continuous(dt, tau_s, tau_a, g_a, w, w_slow, beta, beta_slow, 
+                                                    g_I, I_cue, s, o, a, z_slow, z_fast, 
                                                     hypercolumns, minicolumns, recall_dynamics, tau_z_fast, tau_z_slow, noise)
         # Calculate winner
         winner = calculate_step_winner(o, patterns_dic)
