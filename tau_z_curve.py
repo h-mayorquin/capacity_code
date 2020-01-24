@@ -29,10 +29,7 @@ T_start=float(sys.argv[8])
 T_per_pattern=float(sys.argv[9])
 recall_dynamics = sys.argv[10]
 
-if recall_dynamics[-2] == 'm':
-    memory = True
-else:
-    memory = False
+memory = recall_dynamics[-2]
 
 tau_z_slow = 0.005
 
@@ -43,7 +40,7 @@ trials_per_rank = ceil(total_trials / size)
 total_trials = trials_per_rank * size
 transitions_per_sequence = sequence_length - 1
 ns = floor(transitions / transitions_per_sequence)
-tau_z_vector = np.linspace(0.025, 0.125, num=25)
+tau_z_vector = np.linspace(0.010, 0.125, num=25)
 
 
 if rank == 0:

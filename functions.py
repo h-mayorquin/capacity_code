@@ -9,12 +9,24 @@ import multiprocessing as mp
 from patterns_representation import PatternsRepresentation, build_network_representation
 
 
+def get_w_pre_post(P, p_pre, p_post):
+
+    outer = np.outer(p_post, p_pre)
+    x = P / outer
+
+    # P_qual zero and outer is bigger than epsilon
+    #P_equal_zero = (P < epsilon) * (outer > epsilon)
+    w = np.log(x)
+    #w[P_equal_zero] = np.log10(epsilon)
+
+    return w
+
+
 def get_beta(p):
 
     beta = np.log(p)
 
     return beta
-
 
 def softmax(input_vector, G=1.0, minicolumns=2):
     """Calculate the softmax of a list of numbers w.
@@ -125,14 +137,30 @@ def calculate_P_self_repeat(T1, tau_z_pre, tau_z_post, last_seen, Ts=0, memory=T
 def build_P(patterns, hypercolumns, minicolumns, tau_z_pre, tau_z_post, Tp, Ts, lower_bound=1e-6, verbose=False, memory=True):
     if verbose:
         print('Number of patterns you see before', number)
-
-    if memory:
+    
+    if memory=='m':
+        memory_buffer = True
+        memory_self = True
+    elif memory =='n':
+        memory_buffer = False
+        memory_self = False
+    elif memory =='s':
+        memory_buffer = False
+        memory_self = True
+    elif memory=='x':
+        memory_buffer=True
+        memory_self=False
+    
+    if memory_buffer:
         buffer_size = int(np.ceil(-np.log(lower_bound) * (tau_z_pre / Tp))) 
     else:
         buffer_size = 1
     
     P = np.zeros((minicolumns * hypercolumns, minicolumns * hypercolumns))
     buffer = deque([], buffer_size)  # Holds up to three numbers
+    P_next = calculate_P_next(Tp, Tp, tau_z_pre, tau_z_post, Ts)
+    P_next_reverse = calculate_P_next(Tp, Tp, tau_z_post, tau_z_pre, Ts)
+
     last_seen_vector = np.zeros(minicolumns * hypercolumns)
     running_index = 0
 
@@ -158,7 +186,7 @@ def build_P(patterns, hypercolumns, minicolumns, tau_z_pre, tau_z_post, Tp, Ts, 
                 last_seen  = 1e10
                 
             P[from_pattern, to_pattern] += calculate_P_self_repeat(Tp, tau_z_pre, tau_z_post,
-                                                                   last_seen, memory=memory)
+                                                                   last_seen, memory=memory_self)
         
         # Store the patterns that you just saw
         for element in pattern_in_coordinates:
@@ -166,8 +194,6 @@ def build_P(patterns, hypercolumns, minicolumns, tau_z_pre, tau_z_post, Tp, Ts, 
 
         # Update the next patterns
         for index, past_pattern in enumerate(buffer):
-            P_next = calculate_P_next(Tp, Tp, tau_z_pre, tau_z_post, Ts)
-            P_next_reverse = calculate_P_next(Tp, Tp, tau_z_post, tau_z_pre, Ts)
 
             for hypercolumn_present, present_element in enumerate(pattern):
                 for hypercolumn_past, past_element in enumerate(past_pattern):
@@ -391,50 +417,6 @@ def create_w_and_beta(patterns_to_train, hypercolumns, minicolumns,
     
     return w, beta
 
-
-def create_p_and_w(patterns_to_train, hypercolumns, minicolumns, number_of_sequences, sequence_length, training_time, 
-                      tau_z_pre, tau_z_post, epsilon, memory=True, resting_time=0):
-
-    Tp = training_time 
-    Ts = 0
-    P = np.zeros((minicolumns * hypercolumns, minicolumns * hypercolumns))
-    for sequence_index in range(number_of_sequences):
-        sequence = patterns_to_train.reshape((number_of_sequences, sequence_length, hypercolumns))[sequence_index, :]
-        P += build_P(sequence, hypercolumns, minicolumns, tau_z_pre, tau_z_post, 
-                     Tp, Ts, lower_bound=1e-6, verbose=False, memory=memory)
-    
-    T_training_total = Tp * number_of_sequences * sequence_length + resting_time
-    value = Tp  / T_training_total
-    
-    p = calculate_probabililties(patterns_to_train, minicolumns) * value
-    P *= 1.0 / T_training_total
-    P[P < epsilon**2] = epsilon ** 2
-    p[p < epsilon] = epsilon
-    
-    w = get_w_pre_post(P, p, p, diagonal_zero=False)
-    beta = get_beta(p)
-    
-    return w, beta, P, p
-
-
-def get_w_pre_post(P, p_pre, p_post):
-
-    outer = np.outer(p_post, p_pre)
-    x = P / outer
-
-    # P_qual zero and outer is bigger than epsilon
-    #P_equal_zero = (P < epsilon) * (outer > epsilon)
-    w = np.log(x)
-    #w[P_equal_zero] = np.log10(epsilon)
-
-    return w
-
-
-def get_beta(p):
-
-    beta = np.log(p)
-
-    return beta
 
 def calculate_sequences_statistics(patterns_to_train, hypercolumns, minicolumns, number_of_sequences, sequence_length, 
                                    T_cue, T_recall, dt, w, w_slow, beta, beta_slow, tau_s, 
