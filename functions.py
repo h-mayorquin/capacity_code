@@ -492,11 +492,15 @@ def run_network_recall(sequence_cue, T_cue, T_recall, dt, w, w_slow, beta, beta_
 
     nt_cue = int(T_cue / dt)
     nt_recall = int(T_recall / dt)
+    n_units = hypercolumns * minicolumns
 
     
     I_cue = activity_to_neural_pattern(sequence_cue, minicolumns)
-
-    n_units = hypercolumns * minicolumns
+    # Create s_star
+    s_star = np.zeros(n_units)
+    for index in range(n_units):
+        s_star[index] = beta[index] + w[index, :] @ I_cue
+    
     o = np.full(shape=n_units, fill_value=0.0)
     s = np.full(shape=n_units, fill_value=0.0)
     z_slow = np.full(shape=n_units, fill_value=0.0)
@@ -512,8 +516,8 @@ def run_network_recall(sequence_cue, T_cue, T_recall, dt, w, w_slow, beta, beta_
     for i in range(nt_cue):
         # Step ahead
         noise = 0
-        o, s, a, z_slow, z_fast = update_continuous(dt, tau_s, tau_a, g_a, w, w_slow, beta, beta_slow, 
-                                                    g_I, I_cue, s, o, a, z_slow, z_fast, 
+        o, s, a, z_slow, z_fast = update_s_cue(dt, tau_s, tau_a, g_a, w, w_slow, beta, beta_slow, 
+                                                    g_I, s_star, s, o, a, z_slow, z_fast, 
                                                     hypercolumns, minicolumns, recall_dynamics, tau_z_fast, tau_z_slow, noise)
         # Calculate winner
         winner = calculate_step_winner(o, patterns_dic)
@@ -577,6 +581,33 @@ def update_continuous(dt, tau_s, tau_a, g_a, w, w_slow, beta, beta_slow, g_I, I,
         z_slow += (dt / tau_z_slow) * (o - z_slow)
 
     return o, s, a, z_slow, z_fast
+
+
+def update_s_cue(dt, tau_s, tau_a, g_a, w, w_slow, beta, beta_slow, g_I, s_star, s, o, a, z_slow, z_fast,
+                 hypercolumns, minicolumns, recall_dynamics, tau_z_fast, tau_z_slow, noise):
+    
+    
+    # Add noise
+    s = s_star
+    s += noise
+    
+    # Non-linearity
+    if True:
+        o = strict_max(s, minicolumns=minicolumns)
+    else:
+        o = softmax(s, G=G, minicolumns=minicolumns)
+
+    a += (dt / tau_a) * (o - a)
+
+    # Update z variables
+    if recall_dynamics[:-2] == 'one_trace':
+        z_fast += (dt / tau_z_fast) * (o - z_fast)
+    if recall_dynamics[:-2] == 'two_traces':
+        z_fast += (dt / tau_z_fast) * (o - z_fast)
+        z_slow += (dt / tau_z_slow) * (o - z_slow)
+
+    return o, s, a, z_slow, z_fast
+
 
 def hamming_sim(pattern1, pattern2):
     return np.sum(pattern1 == pattern2) 
