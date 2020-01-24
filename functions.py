@@ -309,7 +309,7 @@ def calculate_patterns_timings(winning_patterns, dt, remove=0.010):
 
 def serial_wrapper(trials, hypercolumns, minicolumns, number_of_sequences, sequence_length, pattern_seed,
                    tau_z_pre=0.050, sigma=0.0, tau_z_slow=0.005, tau_a=0.150, g_a=2.0, memory=True, 
-                   recall_dynamics='normala', T_start=0.75, T_per_pattern=0.055, remove=0.010,
+                   recall_dynamics='normala', T_start=0.75, T_per_pattern=0.055, remove=0.010, g_I=1.0,
                    patterns_to_train=None):
     
     # Probably should be changed 
@@ -345,7 +345,7 @@ def serial_wrapper(trials, hypercolumns, minicolumns, number_of_sequences, seque
         aux = run_recall_trial(hypercolumns, minicolumns, number_of_sequences, 
                                sequence_length, dt, tau_z_pre, T_cue, T_recall, 
                                tau_z_post, training_time, remove, tau_s, g_a, tau_a, epsilon, 
-                               memory, recall_dynamics, tau_z_slow, tau_z_fast, sigma_in,
+                               memory, recall_dynamics, tau_z_slow, tau_z_fast, sigma_in, g_I=1.0,
                                patterns_to_train=patterns_to_train)
         
         correctly_recalled, points_of_failure_trial, persistence_times_trial, pairs = aux 
@@ -364,7 +364,7 @@ def serial_wrapper(trials, hypercolumns, minicolumns, number_of_sequences, seque
 def run_recall_trial(hypercolumns, minicolumns, number_of_sequences, sequence_length, dt, 
                      tau_z_pre, T_cue, T_recall, tau_z_post, training_time, 
                      remove, tau_s, g_a, tau_a, epsilon, memory, recall_dynamics, tau_z_slow, tau_z_fast, 
-                     sigma_in, patterns_to_train=None):
+                     sigma_in, g_I=1.0, patterns_to_train=None):
     
     # Random sequence of patterns
     n_patterns = number_of_sequences * sequence_length
@@ -385,7 +385,7 @@ def run_recall_trial(hypercolumns, minicolumns, number_of_sequences, sequence_le
     aux = calculate_sequences_statistics(patterns_to_train, hypercolumns, minicolumns, number_of_sequences, sequence_length, 
                                          T_cue, T_recall, dt, w, w_slow, beta, beta_slow, 
                                          tau_s, tau_a, g_a, patterns_dic, remove, recall_dynamics, 
-                                         tau_z_slow, tau_z_fast, sigma_in)
+                                         tau_z_slow, tau_z_fast, sigma_in, g_I)
     
     correctly_recalled, point_of_failure, persistence_times, seq_and_recalled_pairs = aux
     
@@ -421,7 +421,7 @@ def create_w_and_beta(patterns_to_train, hypercolumns, minicolumns,
 def calculate_sequences_statistics(patterns_to_train, hypercolumns, minicolumns, number_of_sequences, sequence_length, 
                                    T_cue, T_recall, dt, w, w_slow, beta, beta_slow, tau_s, 
                                    tau_a, g_a, patterns_dic, remove, recall_dynamics, 
-                                   tau_z_slow, tau_z_fast, sigma_in):
+                                   tau_z_slow, tau_z_fast, sigma_in, g_I):
     
     correctly_recalled = []
     points_of_failure = []
@@ -437,7 +437,7 @@ def calculate_sequences_statistics(patterns_to_train, hypercolumns, minicolumns,
         aux = calculate_recalled_patterns(sequence, T_cue, T_recall, dt, w, w_slow, beta, 
                                           beta_slow, tau_s, tau_a, g_a, 
                                           patterns_dic, hypercolumns, minicolumns, remove, 
-                                          recall_dynamics, tau_z_slow, tau_z_fast, sigma_in)
+                                          recall_dynamics, tau_z_slow, tau_z_fast, sigma_in, g_I)
 
         recalled_patterns, T_per = aux
         persistence_times.append(T_per)
@@ -459,12 +459,12 @@ def calculate_sequences_statistics(patterns_to_train, hypercolumns, minicolumns,
 
 def calculate_recalled_patterns(sequence, T_cue, T_recall, dt, w, w_slow, beta, 
                                 beta_slow, tau_s, tau_a, g_a, patterns_dic, hypercolumns, minicolumns, remove, 
-                                recall_dynamics, tau_z_slow, tau_z_fast, sigma_in):
+                                recall_dynamics, tau_z_slow, tau_z_fast, sigma_in, g_I):
     sequence_cue = sequence[0]
     
     winners = run_network_recall(sequence_cue, T_cue, T_recall, dt, w, 
                                  w_slow, beta, beta_slow, tau_s, tau_a, g_a, patterns_dic, hypercolumns, minicolumns, 
-                                 recall_dynamics, tau_z_slow, tau_z_fast, sigma_in)
+                                 recall_dynamics, tau_z_slow, tau_z_fast, sigma_in, g_I)
     timings = calculate_patterns_timings(winners, dt, remove=remove)
 
     # Get the list of the recalled patterns
@@ -488,7 +488,7 @@ def calculate_first_point_of_failure(correct_sequence, recalled_sequence, failur
 
 def run_network_recall(sequence_cue, T_cue, T_recall, dt, w, w_slow, beta, beta_slow, tau_s,
                        tau_a, g_a, patterns_dic, hypercolumns, minicolumns, 
-                       recall_dynamics, tau_z_slow, tau_z_fast, sigma_in):
+                       recall_dynamics, tau_z_slow, tau_z_fast, sigma_in, g_I=1.0):
 
     nt_cue = int(T_cue / dt)
     nt_recall = int(T_recall / dt)
@@ -512,7 +512,7 @@ def run_network_recall(sequence_cue, T_cue, T_recall, dt, w, w_slow, beta, beta_
     noise_vector =  sigma_in * np.sqrt(dt) * np.random.normal(0, 1.0, size=(nt_recall, n_units))
 
     winners = np.zeros(nt_recall + nt_cue)
-    g_I = 0.5
+    g_I = g_I
     for i in range(nt_cue):
         # Step ahead
         noise = 0

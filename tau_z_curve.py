@@ -28,6 +28,7 @@ g_a = float(sys.argv[7])
 T_start=float(sys.argv[8])
 T_per_pattern=float(sys.argv[9])
 recall_dynamics = sys.argv[10]
+g_I=1.0
 
 memory = recall_dynamics[-2]
 
@@ -53,7 +54,7 @@ pattern_seed = rank
 for tau_z_pre in tau_z_vector:
     
     aux = serial_wrapper(trials_per_rank, hypercolumns, minicolumns, ns, sequence_length, pattern_seed, tau_z_pre, 
-                         sigma, tau_z_slow, tau_a, g_a, memory, recall_dynamics, T_start, T_per_pattern)
+                         sigma, tau_z_slow, tau_a, g_a, memory, recall_dynamics, T_start, T_per_pattern, g_I=g_I)
     successes, points_of_failure, persistence_times, seq_recalled_pairs = aux
     
     aux_success = comm.gather(successes, root=0)
