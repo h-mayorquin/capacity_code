@@ -164,7 +164,7 @@ def build_P(patterns, hypercolumns, minicolumns, tau_z_pre, tau_z_post, Tp, Ts, 
     last_seen_vector = np.zeros(minicolumns * hypercolumns)
     running_index = 0
 
-    patterns_copy = list(patterns)[::-1]
+    #patterns_copy = list(patterns)[::-1]
     patterns_copy = list(patterns)
     while(len(patterns_copy) > 0):
         pattern = patterns_copy.pop()
@@ -508,7 +508,7 @@ def run_network_recall(sequence_cue, T_cue, T_recall, dt, w, w_slow, beta, beta_
     noise_vector =  sigma_in * np.sqrt(dt) * np.random.normal(0, 1.0, size=(nt_recall, n_units))
 
     winners = np.zeros(nt_recall + nt_cue)
-    g_I = 10.0
+    g_I = 1.0
     for i in range(nt_cue):
         # Step ahead
         noise = 0
