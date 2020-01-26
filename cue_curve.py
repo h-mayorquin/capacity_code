@@ -74,7 +74,7 @@ for g_I in g_I_vector:
 if rank == 0:
     save_dic = {'success': storage_dic_success, 'points_of_failure':storage_dic_points_of_failure, 'persistent_times':storage_dic_persistent_times, 
                'hypercolumns': hypercolumns, 'minicolumns': minicolumns, 'number_of_sequences':ns, 'sigma':sigma, 'g_a':g_a,
-                'sequence_length': sequence_length, 'trials':total_trials, 'tau_z_pre_vector':tau_z_vector, 
+                'sequence_length': sequence_length, 'trials':total_trials, 'tau_z_pre':tau_z_pre, 'g_I_vector':g_I_vector, 
                 'tau_a':tau_a, 'memory':memory, 'recall_dynamics':recall_dynamics}
     
     filename = sys.argv[13]
