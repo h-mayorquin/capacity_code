@@ -35,7 +35,7 @@ memory = recall_dynamics[-2]
 tau_z_slow = 0.005
 
 
-total_trials = 128 * 2
+total_trials = 128 * 1
 
 trials_per_rank = ceil(total_trials / size)
 total_trials = trials_per_rank * size

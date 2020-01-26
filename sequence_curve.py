@@ -30,10 +30,7 @@ T_per_pattern=float(sys.argv[9])
 remove = float(sys.argv[10])
 recall_dynamics = sys.argv[11]
 
-if recall_dynamics[-2] == 'm':
-    memory = True
-else:
-    memory = False
+memory = recall_dynamics[-2]
 
 tau_z_slow = 0.005
 
