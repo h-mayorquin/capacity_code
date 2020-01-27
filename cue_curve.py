@@ -28,7 +28,7 @@ tau_a = float(sys.argv[7])
 g_a = float(sys.argv[8])
 T_start=float(sys.argv[9])
 T_per_pattern=float(sys.argv[10])
-remove = float(sys.argv[10])
+remove = float(sys.argv[11])
 recall_dynamics = sys.argv[12]
 
 
@@ -65,10 +65,10 @@ for g_I in g_I_vector:
     aux_pairs = comm.gather(seq_recalled_pairs, root=0)
     
     if rank == 0:
-        storage_dic_success[tau_z_pre] = sum(aux_success, [])
-        storage_dic_points_of_failure[tau_z_pre] = sum(aux_failure, [])
-        storage_dic_persistent_times[tau_z_pre] = sum(aux_times, [])
-        storage_dic_pairs[tau_z_pre] = sum(aux_pairs, [])
+        storage_dic_success[g_I] = sum(aux_success, [])
+        storage_dic_points_of_failure[g_I] = sum(aux_failure, [])
+        storage_dic_persistent_times[g_I] = sum(aux_times, [])
+        storage_dic_pairs[g_I] = sum(aux_pairs, [])
         
 # Store data as a pickle
 if rank == 0:
