@@ -43,7 +43,7 @@ trials_per_rank = ceil(total_trials / size)
 total_trials = trials_per_rank * size
 transitions_per_sequence = sequence_length - 1
 ns = floor(transitions / transitions_per_sequence)
-g_I_vector = np.linspace(0.5, 2.5, num=25)
+g_I_vector = np.linspace(0.5, 2.0, num=25)
 
 
 if rank == 0:

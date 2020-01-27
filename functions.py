@@ -345,7 +345,7 @@ def serial_wrapper(trials, hypercolumns, minicolumns, number_of_sequences, seque
         aux = run_recall_trial(hypercolumns, minicolumns, number_of_sequences, 
                                sequence_length, dt, tau_z_pre, T_cue, T_recall, 
                                tau_z_post, training_time, remove, tau_s, g_a, tau_a, epsilon, 
-                               memory, recall_dynamics, tau_z_slow, tau_z_fast, sigma_in, g_I=1.0,
+                               memory, recall_dynamics, tau_z_slow, tau_z_fast, sigma_in, g_I=g_I,
                                patterns_to_train=patterns_to_train)
         
         correctly_recalled, points_of_failure_trial, persistence_times_trial, pairs = aux 

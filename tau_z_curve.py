@@ -71,7 +71,7 @@ for tau_z_pre in tau_z_vector:
 # Store data as a pickle
 if rank == 0:
     save_dic = {'success': storage_dic_success, 'points_of_failure':storage_dic_points_of_failure, 'persistent_times':storage_dic_persistent_times, 
-               'hypercolumns': hypercolumns, 'minicolumns': minicolumns, 'number_of_sequences':ns, 'sigma':sigma, 'g_a':g_a,
+               'hypercolumns': hypercolumns, 'minicolumns': minicolumns, 'number_of_sequences':ns, 'sigma':sigma, 'g_a':g_a, 'g_I':g_I,
                 'sequence_length': sequence_length, 'trials':total_trials, 'tau_z_pre_vector':tau_z_vector, 
                 'tau_a':tau_a, 'memory':memory, 'recall_dynamics':recall_dynamics}
     
