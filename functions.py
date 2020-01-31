@@ -476,12 +476,15 @@ def calculate_recalled_patterns(sequence, T_cue, T_recall, dt, w, w_slow, beta,
     return recalled_patterns, persistence_times
 
 def calculate_first_point_of_failure(correct_sequence, recalled_sequence, failure_string):
-    matching_vector = np.prod(correct_sequence == recalled_sequence, axis=1)
-    points_of_failure = np.where(matching_vector == 0)[0]
-    if points_of_failure.sum() > 0:
-        first_point_of_failure = np.min(np.where(matching_vector == 0)[0])
+    if len(recalled_sequence) == 0:
+        first_point_of_failure = 'nothing lasted that long'
     else:
-        first_point_of_failure = failure_string
+        matching_vector = np.prod(correct_sequence == recalled_sequence, axis=1)
+        points_of_failure = np.where(matching_vector == 0)[0]
+        if points_of_failure.sum() > 0:
+            first_point_of_failure = np.min(np.where(matching_vector == 0)[0])
+        else:
+            first_point_of_failure = failure_string
 
     return first_point_of_failure
 

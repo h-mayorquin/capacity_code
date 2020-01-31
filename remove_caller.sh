@@ -24,7 +24,7 @@ recall_dynamics="normalma"
 #recall_dynamics="normalno"
 g_I=1.0
 
-output="../databases/cue_h${hypercolumns}_m${minicolumns}_sl${sequence_length}_transitions${transitions}_z${tau_z_pre}_sigma${sigma}_a${tau_a}_ga${g_a}_gI${g_I}_${recall_dynamics}.pickle"
+output="../databases/remove_h${hypercolumns}_m${minicolumns}_sl${sequence_length}_transitions${transitions}_z${tau_z_pre}_sigma${sigma}_a${tau_a}_ga${g_a}_gI${g_I}_${recall_dynamics}.pickle"
 
 module load mpi4py/3.0.2/py37
 #aprun -n 128 -N 32 python ./mpi_test.py > my_output_file.txt
