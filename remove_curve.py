@@ -21,28 +21,27 @@ size = comm.Get_size()
 hypercolumns = int(sys.argv[1])
 minicolumns = int(sys.argv[2])
 sequence_length = int(sys.argv[3])
-tau_z_pre = float(sys.argv[4])
-sigma = float(sys.argv[5])
-tau_a = float(sys.argv[6])
-g_a = float(sys.argv[7])
-T_start=float(sys.argv[8])
-T_per_pattern=float(sys.argv[9])
-remove = float(sys.argv[10])
-recall_dynamics = sys.argv[11]
-g_I = 1.0
+transitions = int(sys.argv[4])
+tau_z_pre = float(sys.argv[5])
+sigma = float(sys.argv[6])
+tau_a = float(sys.argv[7])
+g_a = float(sys.argv[8])
+T_start=float(sys.argv[9])
+T_per_pattern=float(sys.argv[10])
+g_I = float(sys.argv[11])  ####################
+recall_dynamics = sys.argv[12]
+
 memory = recall_dynamics[-2]
 
 tau_z_slow = 0.005
 
-
-total_trials = 100
-max_transitions = 100
+total_trials = 128 * 1
 
 trials_per_rank = ceil(total_trials / size)
 total_trials = trials_per_rank * size
 transitions_per_sequence = sequence_length - 1
-max_ns = floor(max_transitions / transitions_per_sequence)
-number_of_sequences_vector = np.arange(2, max_ns , 1)
+ns = floor(transitions / transitions_per_sequence)
+remove_vector = np.linspace(0.010, 0.050, num=5)
 
 
 
@@ -53,7 +52,7 @@ if rank == 0:
     storage_dic_pairs = {}
     
 pattern_seed = rank
-for ns in number_of_sequences_vector:
+for remove in remove_vector:
     
     aux = serial_wrapper(trials_per_rank, hypercolumns, minicolumns, ns, sequence_length, pattern_seed, tau_z_pre, 
                          sigma, tau_z_slow, tau_a, g_a, memory, recall_dynamics, T_start, T_per_pattern, remove=remove, g_I=g_I)
@@ -65,16 +64,17 @@ for ns in number_of_sequences_vector:
     aux_pairs = comm.gather(seq_recalled_pairs, root=0)
     
     if rank == 0:
-        storage_dic_success[ns] = sum(aux_success, [])
-        storage_dic_points_of_failure[ns] = sum(aux_failure, [])
-        storage_dic_persistent_times[ns] = sum(aux_times, [])
-        storage_dic_pairs[ns] = sum(aux_pairs, [])
+        storage_dic_success[remove] = sum(aux_success, [])
+        storage_dic_points_of_failure[remove] = sum(aux_failure, [])
+        storage_dic_persistent_times[remove] = sum(aux_times, [])
+        storage_dic_pairs[remove] = sum(aux_pairs, [])
         
 # Store data as a pickle
 if rank == 0:
     save_dic = {'success': storage_dic_success, 'points_of_failure':storage_dic_points_of_failure, 'persistent_times':storage_dic_persistent_times, 
-               'hypercolumns': hypercolumns, 'minicolumns': minicolumns, 'number_of_sequences':number_of_sequences_vector, 'sigma':sigma, 'g_a':g_a, 'g_I':g_I,
-                'sequence_length': sequence_length, 'trials':total_trials, 'tau_z_pre':tau_z_pre, 'tau_a':tau_a, 'memory':memory, 'recall_dynamics':recall_dynamics}
+               'hypercolumns': hypercolumns, 'minicolumns': minicolumns, 'number_of_sequences':ns, 'sigma':sigma, 'g_a':g_a, 'g_I':g_I,
+                'sequence_length': sequence_length, 'trials':total_trials, 'tau_z_pre':tau_z_pre, 'tau_a':tau_a, 'memory':memory, 
+                'recall_dynamics':recall_dynamics, 'remove_vector':remove_vector}
     
     filename = sys.argv[12]
     with open(filename, 'wb') as handle:
