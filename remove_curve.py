@@ -76,6 +76,6 @@ if rank == 0:
                 'sequence_length': sequence_length, 'trials':total_trials, 'tau_z_pre':tau_z_pre, 'tau_a':tau_a, 'memory':memory, 
                 'recall_dynamics':recall_dynamics, 'remove_vector':remove_vector}
     
-    filename = sys.argv[12]
+    filename = sys.argv[13]
     with open(filename, 'wb') as handle:
         pickle.dump(save_dic, handle, protocol=pickle.HIGHEST_PROTOCOL)
